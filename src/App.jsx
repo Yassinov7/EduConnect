@@ -24,7 +24,7 @@ import StudentAllResultsPage from "./pages/Course/components/quiz/StudentAllResu
 function LandingPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-slate-950/60">
-      <h1 className="text-4xl font-bold text-orange-500">EduConnect</h1>
+      <h1 className="text-4xl font-bold text-orange-500">EduConnect </h1>
       <a href="/register" className="bg-orange-500 px-4 py-2 rounded text-white font-bold shadow">
         إنشاء حساب جديد
       </a>
