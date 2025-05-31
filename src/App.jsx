@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import RegisterPage from "./pages/Auth/RegisterPage";
 import LoginPage from "./pages/Auth/LoginPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -25,12 +25,12 @@ function LandingPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-slate-950/60">
       <h1 className="text-4xl font-bold text-orange-500">EduConnect </h1>
-      <a href="/register" className="bg-orange-500 px-4 py-2 rounded text-white font-bold shadow">
+      <Link to="/register" className="bg-orange-500 px-4 py-2 rounded text-white font-bold shadow">
         إنشاء حساب جديد
-      </a>
-      <a href="/login" className="bg-white px-4 py-2 rounded font-bold shadow">
+      </Link>
+      <Link to="/login" className="bg-white px-4 py-2 rounded font-bold shadow">
         تسجيل دخول
-      </a>
+      </Link>
     </div>
   );
 }
