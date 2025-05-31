@@ -31,7 +31,7 @@
 ## 📦 التعليمات
 
 ```bash
-git clone https://github.com/USERNAME/EduConnect.git
+git clone https://github.com/Yassinov7/EduConnect.git
 cd EduConnect
 npm install
 cp .env.example .env   # أضف إعدادات Supabase هنا
