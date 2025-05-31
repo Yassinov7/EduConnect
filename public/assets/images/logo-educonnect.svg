@@ -1,0 +1,18 @@
+
+---
+
+## 3. **شعار (SVG) بسيط واحترافي للمنصة "EduConnect"**
+
+### **احفظ هذا كملف `logo-educonnect.svg` في مجلد المشروع أو `public/`:**
+
+```xml
+<svg width="180" height="60" viewBox="0 0 380 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="380" height="120" rx="26" fill="#F59E42"/>
+  <g>
+    <text x="28" y="72" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="48" fill="#fff">Edu</text>
+    <text x="125" y="74" font-family="Cairo, Arial, sans-serif" font-size="45" fill="#1e293b" font-weight="bold">Connect</text>
+    <circle cx="340" cy="60" r="18" fill="#fff" />
+    <path d="M335 60c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5-2.5 5.5-5.5 5.5-5.5-2.5-5.5-5.5z" fill="#F59E42"/>
+    <rect x="324" y="86" width="32" height="7" rx="3.5" fill="#fff" opacity="0.7"/>
+  </g>
+</svg>
