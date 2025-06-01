@@ -38,7 +38,6 @@ export default function CategoriesPage() {
     setFormLoading(true);
 
     if (!formName.trim()) {
-      // يمكنك هنا إضافة toast من sonner لو أردت
       setFormLoading(false);
       return;
     }
@@ -78,6 +77,7 @@ export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-slate-100 pt-24 flex flex-col items-center px-2">
       <div className="bg-white rounded-2xl shadow-xl p-7 w-full max-w-3xl flex flex-col gap-6">
+        {/* العنوان وزر الإضافة */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <h2 className="text-2xl font-bold text-orange-600">إدارة التصنيفات</h2>
           <Button
@@ -128,50 +128,50 @@ export default function CategoriesPage() {
           </form>
         )}
 
-        {/* قائمة التصنيفات */}
-        <div className="mt-3">
+        {/* قائمة التصنيفات بشكل بطاقات */}
+        <div className="mt-3 w-full">
           {categoriesLoading ? (
             <div className="text-center text-slate-500 py-6">...تحميل التصنيفات</div>
           ) : categories.length === 0 ? (
             <div className="text-center text-slate-400 py-6">لا يوجد تصنيفات حالياً</div>
           ) : (
-            <table className="w-full mt-1 bg-white rounded-xl shadow border">
-              <thead>
-                <tr className="bg-orange-50">
-                  <th className="py-2 px-4 text-right font-bold text-slate-800">#</th>
-                  <th className="py-2 px-4 text-right font-bold text-slate-800">الاسم</th>
-                  <th className="py-2 px-4 text-right font-bold text-slate-800">الوصف</th>
-                  <th className="py-2 px-4 text-right font-bold text-slate-800">عدد الدورات</th>
-                  <th className="py-2 px-4"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((cat, i) => (
-                  <tr key={cat.id} className="border-t">
-                    <td className="py-2 px-4 text-center">{i + 1}</td>
-                    <td className="py-2 px-4">{cat.name}</td>
-                    <td className="py-2 px-4">{cat.description || <span className="text-gray-400">بدون وصف</span>}</td>
-                    <td className="py-2 px-4 text-center">{cat.courses_count}</td>
-                    <td className="py-2 px-4 flex gap-2 justify-end">
-                      <Button
-                        variant="outline"
-                        className="flex items-center gap-1 text-blue-700 hover:text-white hover:bg-blue-700 px-3"
-                        onClick={() => openForm(cat)}
-                      >
-                        <Edit size={18} /> تعديل
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex items-center gap-1 text-red-600 hover:text-white hover:bg-red-600 px-3"
-                        onClick={() => setDeleteCat(cat)}
-                      >
-                        <Trash2 size={18} /> حذف
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {categories.map((cat, i) => (
+                <div
+                  key={cat.id}
+                  className="bg-white rounded-2xl shadow p-4 flex flex-col gap-2 border border-slate-100 hover:shadow-lg transition"
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-orange-600 text-lg truncate" title={cat.name}>{cat.name}</span>
+                    <span className="text-xs text-slate-400">#{i + 1}</span>
+                  </div>
+                  <div className="text-sm text-slate-700 min-h-[32px]">
+                    {cat.description || <span className="text-gray-400">بدون وصف</span>}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="bg-orange-50 px-2 py-1 rounded text-orange-600 text-xs">
+                      {cat.courses_count} دورة
+                    </span>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      className="flex-1 flex items-center gap-1 text-blue-700 hover:text-white hover:bg-blue-700 px-2 py-1 text-xs"
+                      onClick={() => openForm(cat)}
+                    >
+                      <Edit size={16} /> تعديل
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 flex items-center gap-1 text-red-600 hover:text-white hover:bg-red-600 px-2 py-1 text-xs"
+                      onClick={() => setDeleteCat(cat)}
+                    >
+                      <Trash2 size={16} /> حذف
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
