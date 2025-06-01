@@ -1,9 +1,6 @@
-// CoursesManagementPage.jsx
 import { useState } from "react";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../contexts/AuthProvider";
 import { useGlobalData } from "../../contexts/GlobalDataProvider";
-import { supabase } from "../../services/supabaseClient";
-import { toast } from "sonner";
 import { PlusCircle, Edit, Trash2, BookOpen, AlertTriangle } from "lucide-react";
 import CourseFormModal from "./CourseFormModal";
 
@@ -12,8 +9,8 @@ export default function CoursesManagementPage() {
   const {
     courses,
     coursesLoading,
-    fetchCourses, // تأتي من السياق ومضمونة
     categories,
+    deleteCourseWithCover, // استخدم دالة الحذف من السياق
   } = useGlobalData();
 
   const [showForm, setShowForm] = useState(false);
@@ -102,7 +99,6 @@ export default function CoursesManagementPage() {
           onClose={() => setShowForm(false)}
           onSaved={() => {
             setShowForm(false);
-            fetchCourses();
           }}
         />
       )}
@@ -114,13 +110,7 @@ export default function CoursesManagementPage() {
           message="هل أنت متأكد أنك تريد حذف هذه الدورة؟ لا يمكن التراجع!"
           onCancel={() => setDeleting(null)}
           onConfirm={async () => {
-            const { error } = await supabase.from("courses").delete().eq("id", deleting.id);
-            if (!error) {
-              toast.success("تم حذف الدورة بنجاح");
-              fetchCourses();
-            } else {
-              toast.error("فشل الحذف: " + error.message);
-            }
+            await deleteCourseWithCover(deleting); // من السياق
             setDeleting(null);
           }}
         />

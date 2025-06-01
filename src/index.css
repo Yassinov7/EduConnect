@@ -1,14 +1,15 @@
 @font-face {
-  font-family: Noto;
-  src: url(..\src\assets\fonts\NotoKufiArabic-VariableFont_wght.ttf);
+  font-family: "noto";
+  src: url("/fonts/NotoKufiArabic-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
 }
+
 
 @import "tailwindcss";
 
-@theme {
-  --font-noto: Noto, sans-serif;
+
+body, html {
+  font-family: "noto", "sans-serif";
 }
 
-body {
-  font-family: var(--font-noto);
-}

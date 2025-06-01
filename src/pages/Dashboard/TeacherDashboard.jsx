@@ -40,7 +40,7 @@ export default function TeacherDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 pt-24 flex flex-col items-center px-2">
+        <div className="min-h-screen noto bg-slate-100 pt-24 flex flex-col items-center px-2">
             <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-2xl flex flex-col gap-3 items-center">
                 {/* الإشعارات */}
                 <div className="flex items-center gap-2 w-full">

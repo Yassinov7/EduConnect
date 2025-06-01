@@ -1,13 +1,19 @@
 import { useState } from "react";
 import { useGlobalData } from "../../contexts/GlobalDataProvider";
-import { supabase } from "../../services/supabaseClient";
-import { toast } from "sonner";
 import { PlusCircle, Trash2, Edit } from "lucide-react";
 import ConfirmDeleteDialog from "../../components/ui/ConfirmDeleteDialog";
 import Button from "../../components/ui/Button";
 
 export default function CategoriesPage() {
-  const { categories, categoriesLoading, fetchCategories } = useGlobalData();
+  const {
+    categories,
+    categoriesLoading,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    fetchCategories,
+  } = useGlobalData();
+
   const [showForm, setShowForm] = useState(false);
   const [editCategory, setEditCategory] = useState(null);
   const [deleteCat, setDeleteCat] = useState(null);
@@ -32,50 +38,41 @@ export default function CategoriesPage() {
     setFormLoading(true);
 
     if (!formName.trim()) {
-      toast.error("يرجى إدخال اسم التصنيف");
+      // يمكنك هنا إضافة toast من sonner لو أردت
       setFormLoading(false);
       return;
     }
 
+    let ok = false;
     if (editCategory) {
-      // تعديل
-      const { error } = await supabase
-        .from("categories")
-        .update({ name: formName.trim(), description: formDesc.trim() })
-        .eq("id", editCategory.id);
-      if (error) toast.error(error.message);
-      else toast.success("تم تحديث التصنيف");
+      ok = await updateCategory(editCategory.id, {
+        name: formName.trim(),
+        description: formDesc.trim(),
+      });
     } else {
-      // إضافة
-      const { error } = await supabase
-        .from("categories")
-        .insert([{ name: formName.trim(), description: formDesc.trim() }]);
-      if (error) toast.error(error.message);
-      else toast.success("تم إضافة التصنيف");
+      ok = await addCategory({
+        name: formName.trim(),
+        description: formDesc.trim(),
+      });
     }
+
     setFormLoading(false);
-    setShowForm(false);
-    setEditCategory(null);
-    setFormName("");
-    setFormDesc("");
-    fetchCategories();
+
+    if (ok) {
+      setShowForm(false);
+      setEditCategory(null);
+      setFormName("");
+      setFormDesc("");
+    }
   }
 
   // تأكيد الحذف
   async function handleDelete() {
     if (!deleteCat) return;
     setDeleteLoading(true);
-    const { error } = await supabase
-      .from("categories")
-      .delete()
-      .eq("id", deleteCat.id);
+    const ok = await deleteCategory(deleteCat.id);
     setDeleteLoading(false);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("تم حذف التصنيف");
-      fetchCategories();
-    }
-    setDeleteCat(null);
+    if (ok) setDeleteCat(null);
   }
 
   return (

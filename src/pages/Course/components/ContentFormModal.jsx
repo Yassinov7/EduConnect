@@ -17,6 +17,19 @@ function getFileIcon(name = "") {
     return <Paperclip />;
 }
 
+// استخراج اسم الملف من الـ public url
+function getStorageFileName(fileUrl) {
+    const parts = fileUrl.split("/");
+    return parts[parts.length - 1];
+}
+
+// حذف مجموعة ملفات من الباكت (ممكن استخدامه عند حذف المحتوى بالكامل)
+export async function removeFilesFromBucket(files = []) {
+    if (!files.length) return;
+    const fileNames = files.map(file => getStorageFileName(file.url));
+    await supabase.storage.from("content-files").remove(fileNames);
+}
+
 export default function ContentFormModal({ content, sectionId, onClose, onSaved }) {
     const [title, setTitle] = useState(content?.title || "");
     const [body, setBody] = useState(content?.body || "");
@@ -25,7 +38,7 @@ export default function ContentFormModal({ content, sectionId, onClose, onSaved 
     const [files, setFiles] = useState(content?.files || []);
     const inputRef = useRef();
 
-    // handle file upload
+    // رفع الملفات
     async function handleFileUpload(e) {
         const filesArr = Array.from(e.target.files);
         setLoading(true);
@@ -52,8 +65,17 @@ export default function ContentFormModal({ content, sectionId, onClose, onSaved 
         inputRef.current.value = "";
     }
 
-    // remove file from the list before save (does NOT delete from bucket)
-    function handleRemoveFile(idx) {
+    // حذف ملف واحد من الباكت ومن القائمة
+    async function handleRemoveFile(idx) {
+        const file = files[idx];
+        if (file?.url) {
+            const fileName = getStorageFileName(file.url);
+            const { error } = await supabase.storage.from("content-files").remove([fileName]);
+            if (error) {
+                toast.error("تعذر حذف الملف من التخزين!");
+                return;
+            }
+        }
         setFiles(files.filter((_, i) => i !== idx));
     }
 
@@ -88,6 +110,9 @@ export default function ContentFormModal({ content, sectionId, onClose, onSaved 
         }
         setLoading(false);
     }
+
+    // دالة تستخدمها من الخارج عند حذف المحتوى بالكامل
+    // مثال: await removeFilesFromBucket(content.files);
 
     return (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">

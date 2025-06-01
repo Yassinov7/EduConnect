@@ -1,12 +1,12 @@
-// src/pages/Courses/components/SectionFormModal.jsx
 import { useState } from "react";
-import { supabase } from "../../../services/supabaseClient";
 import Button from "../../../components/ui/Button";
 import { toast } from "sonner";
+import { useCourseContent } from "../../../contexts/CourseContentContext";
 
 export default function SectionFormModal({ section, courseId, onClose, onSaved }) {
   const [title, setTitle] = useState(section?.title || "");
   const [loading, setLoading] = useState(false);
+  const { addSection, updateSection } = useCourseContent();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -16,27 +16,21 @@ export default function SectionFormModal({ section, courseId, onClose, onSaved }
       setLoading(false);
       return;
     }
+    let success = false;
     if (section) {
       // تعديل
-      const { error } = await supabase.from("sections")
-        .update({ title })
-        .eq("id", section.id);
-      if (!error) {
-        toast.success("تم تحديث القسم بنجاح");
-        onSaved && onSaved();
-        onClose();
-      } else toast.error(error.message);
+      success = await updateSection(section.id, courseId, title);
+      if (success) toast.success("تم تحديث القسم بنجاح");
     } else {
       // إضافة
-      const { error } = await supabase.from("sections")
-        .insert([{ title, course_id: courseId }]);
-      if (!error) {
-        toast.success("تم إضافة القسم!");
-        onSaved && onSaved();
-        onClose();
-      } else toast.error(error.message);
+      success = await addSection(courseId, title);
+      if (success) toast.success("تم إضافة القسم!");
     }
     setLoading(false);
+    if (success) {
+      onSaved && onSaved();
+      onClose();
+    }
   }
 
   return (

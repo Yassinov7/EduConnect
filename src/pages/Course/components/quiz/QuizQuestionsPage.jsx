@@ -1,35 +1,27 @@
-// components/quiz/QuizQuestionsPage.jsx
 import { useEffect, useState } from "react";
-import { supabase } from "../../../../services/supabaseClient";
 import Button from "../../../../components/ui/Button";
 import { Edit, Trash2, PlusCircle } from "lucide-react";
 import QuizQuestionFormModal from "./QuizQuestionFormModal";
 import DeleteConfirmation from "../../../../components/ui/DeleteConfirmation";
+import { useQuizData } from "../../../../contexts/QuizDataProvider";
 
 export default function QuizQuestionsPage({ quizId, isTeacher }) {
-  const [questions, setQuestions] = useState([]);
+  const { fetchQuizQuestions, deleteQuizQuestion, questionsMap, loading } = useQuizData();
   const [showForm, setShowForm] = useState(false);
   const [editQuestion, setEditQuestion] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    fetchQuestions();
+    if (quizId) fetchQuizQuestions(quizId);
     // eslint-disable-next-line
   }, [quizId]);
 
-  async function fetchQuestions() {
-    const { data = [] } = await supabase
-      .from("quiz_questions")
-      .select("*")
-      .eq("quiz_id", quizId)
-      .order("created_at", { ascending: true });
-    setQuestions(data);
-  }
+  const questions = questionsMap[quizId] || [];
 
   async function handleDelete(id) {
-    await supabase.from("quiz_questions").delete().eq("id", id);
+    await deleteQuizQuestion(id);
     setDeleteTarget(null);
-    fetchQuestions();
+    fetchQuizQuestions(quizId);
   }
 
   return (
@@ -38,7 +30,8 @@ export default function QuizQuestionsPage({ quizId, isTeacher }) {
         <span className="bg-orange-100 rounded-xl px-3 py-1">إدارة أسئلة الاختبار</span>
       </h2>
       <div className="flex flex-col gap-5">
-        {questions.length === 0 && (
+        {loading && <div className="text-center text-gray-400">جاري التحميل...</div>}
+        {!loading && questions.length === 0 && (
           <div className="text-gray-500 text-center">لا يوجد أسئلة بعد.</div>
         )}
         {questions.map((q, idx) => (
@@ -88,7 +81,7 @@ export default function QuizQuestionsPage({ quizId, isTeacher }) {
           quizId={quizId}
           question={editQuestion}
           onClose={() => setShowForm(false)}
-          onSaved={fetchQuestions}
+          onSaved={() => fetchQuizQuestions(quizId)}
         />
       )}
 

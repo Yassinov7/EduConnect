@@ -1,4 +1,3 @@
-// src/pages/Courses/CourseDetailPage.jsx
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthProvider";
 import { useGlobalData } from "../../contexts/GlobalDataProvider";
@@ -8,13 +7,13 @@ import Button from "../../components/ui/Button";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
 import { supabase } from "../../services/supabaseClient";
 import { toast } from "sonner";
+import { useCoursesData } from "../../contexts/CoursesDataContext"; // ⭐️
 
-// تبويبات فرعية
 import SectionTabs from "./components/section/SectionTabs";
 import CommentsTab from "./components/comments/CommentsTab";
 import EnrolledStudentsTab from "./components/EnrolledStudentsTab";
 import DeleteConfirmation from "../../components/ui/DeleteConfirmation";
-import CourseFormModal from "./CourseFormModal"; // نفس الفورم للإضافة/التعديل
+import CourseFormModal from "./CourseFormModal";
 
 // ⭐ مكون عرض النجوم
 function StarRating({ value, size = 19 }) {
@@ -34,14 +33,12 @@ function StarRating({ value, size = 19 }) {
 export default function CourseDetailPage() {
   const { id } = useParams(); // courseId
   const { user, profile } = useAuth();
-  const { courses, coursesLoading, fetchCourses, coursesRatings } = useGlobalData();
+  const { courses, coursesLoading, fetchCourses, categories, courses: allCourses } = useGlobalData();
+  const { ratingsMap, fetchCourseRating, setCourseRating } = useCoursesData(); // ⭐️
   const navigate = useNavigate();
-  const { categories, courses: allCourses } = useGlobalData();
   const [activeTab, setActiveTab] = useState("content");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-
-  // حماية: هل الطالب مسجل في الدورة؟
   const [enrolled, setEnrolled] = useState(false);
   const [checkingEnroll, setCheckingEnroll] = useState(true);
 
@@ -49,8 +46,9 @@ export default function CourseDetailPage() {
   const course = useMemo(() => courses.find(c => c.id === id), [courses, id]);
   const isTeacher = profile?.role === "teacher" && course?.teacher_id === user?.id;
 
-  // بيانات التقييم من السياق
-  const ratingObj = coursesRatings?.[course?.id] || { avg: "0.0", count: 0 };
+  // تقييم الدورة من السياق الجديد
+  const ratingObj = ratingsMap?.[course?.id] || { avg: "0.0", count: 0, myRating: 0 };
+  const [ratingLoading, setRatingLoading] = useState(false);
 
   // تحقق من الاشتراك
   useEffect(() => {
@@ -72,6 +70,14 @@ export default function CourseDetailPage() {
     checkEnrollment();
     return () => { ignore = true; };
   }, [user, course, isTeacher]);
+
+  // جلب التقييم عند تغير الدورة أو المستخدم
+  useEffect(() => {
+    if (course?.id && user?.id) {
+      fetchCourseRating(course.id, user.id);
+    }
+    // eslint-disable-next-line
+  }, [course?.id, user?.id]);
 
   useEffect(() => {
     if (!coursesLoading && !course) {
@@ -109,6 +115,14 @@ export default function CourseDetailPage() {
     }
   }
 
+  // عند تغيير تقييم المستخدم
+  async function handleUserRating(newRating) {
+    setRatingLoading(true);
+    await setCourseRating(course.id, user.id, newRating);
+    await fetchCourseRating(course.id, user.id);
+    setRatingLoading(false);
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 pt-10 pb-16 px-2 sm:px-6">
       <div className="max-w-4xl mx-auto">
@@ -132,6 +146,19 @@ export default function CourseDetailPage() {
               <StarRating value={parseFloat(ratingObj.avg)} />
               <span className="text-orange-600 font-bold text-base">{ratingObj.avg}/5</span>
               <span className="text-xs text-gray-400">({ratingObj.count} تقييم)</span>
+              <span className="mx-2 hidden sm:block">|</span>
+              {/* تقييم المستخدم الحالي */}
+              {user && (
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-gray-500">تقييمك:</span>
+                  <StarRating
+                    value={Number(ratingObj.myRating)}
+                    onChange={handleUserRating}
+                    readOnly={ratingLoading}
+                  />
+                  {ratingLoading && <span className="text-xs text-gray-400">جاري الحفظ...</span>}
+                </div>
+              )}
             </div>
             <div className="text-gray-700">{course.description || "لا يوجد وصف للدورة."}</div>
             <div className="flex gap-4 text-xs mt-2">
@@ -169,7 +196,7 @@ export default function CourseDetailPage() {
             active={activeTab === "comments"}
             onClick={() => setActiveTab("comments")}
             icon={<MessageCircle size={22} />}
-            label="التعليقات"
+            label="التعليقات والتقييم"
           />
           {isTeacher && (
             <TabButton
@@ -210,8 +237,8 @@ export default function CourseDetailPage() {
       {showEditModal && (
         <CourseFormModal
           course={course}
-          categories={categories}     // أرسل التصنيفات هنا
-          allCourses={allCourses}     // أرسل جميع الدورات هنا للمتطلبات
+          categories={categories}
+          allCourses={allCourses}
           onClose={() => setShowEditModal(false)}
           onSaved={() => {
             setShowEditModal(false);

@@ -1,11 +1,12 @@
-// src/pages/Courses/CourseFormModal.jsx
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../contexts/AuthProvider";
 import { useState } from "react";
-import { supabase } from "../../services/supabaseClient";
+import { useGlobalData } from "../../contexts/GlobalDataProvider";
 import { toast } from "sonner";
 
 export default function CourseFormModal({ course, categories, allCourses, onClose, onSaved }) {
   const { user } = useAuth();
+  const { addCourse, updateCourse, uploadCourseCover } = useGlobalData();
+
   const [title, setTitle] = useState(course?.title || "");
   const [description, setDescription] = useState(course?.description || "");
   const [categoryId, setCategoryId] = useState(course?.category_id || "");
@@ -18,11 +19,8 @@ export default function CourseFormModal({ course, categories, allCourses, onClos
     const file = e.target.files[0];
     if (!file) return;
     setLoading(true);
-    const fileExt = file.name.split(".").pop();
-    const fileName = `cover-${user.id}-${Date.now()}.${fileExt}`;
-    const { data, error } = await supabase.storage.from("covers").upload(fileName, file);
-    if (error) toast.error("فشل رفع الغلاف");
-    else setCoverUrl(supabase.storage.from("covers").getPublicUrl(fileName).data.publicUrl);
+    const url = await uploadCourseCover(file, user.id);
+    if (url) setCoverUrl(url);
     setLoading(false);
   }
 
@@ -42,29 +40,22 @@ export default function CourseFormModal({ course, categories, allCourses, onClos
       category_id: categoryId || null,
       cover_url: coverUrl || null,
       prerequisite_id: prerequisiteId || null,
-      teacher_id: course ? course.teacher_id : user.id, // الصحيح هنا!
+      teacher_id: course ? course.teacher_id : user.id,
     };
 
+    let ok = false;
     if (course) {
-      // تعديل دورة
-      const { error } = await supabase.from("courses").update(payload).eq("id", course.id);
-      if (!error) {
-        toast.success("تم تعديل الدورة بنجاح");
-        onSaved();
-      } else {
-        toast.error(error.message);
-      }
+      ok = await updateCourse(course.id, payload);
     } else {
-      // إضافة دورة جديدة
-      const { error } = await supabase.from("courses").insert([payload]);
-      if (!error) {
-        toast.success("تم إضافة الدورة!");
-        onSaved();
-      } else {
-        toast.error(error.message);
-      }
+      ok = await addCourse(payload);
     }
+
     setLoading(false);
+
+    if (ok) {
+      onSaved();
+      onClose();
+    }
   }
 
   return (
@@ -110,7 +101,7 @@ export default function CourseFormModal({ course, categories, allCourses, onClos
         >
           <option value="">لا يوجد متطلب (مستوى أولي)</option>
           {allCourses
-            .filter(c => !course || c.id !== course.id) // لا تعرض الدورة نفسها كمتطلب
+            .filter(c => !course || c.id !== course.id)
             .map(c => (
               <option key={c.id} value={c.id}>{c.title}</option>
             ))}

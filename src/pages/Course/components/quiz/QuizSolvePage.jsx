@@ -1,61 +1,53 @@
-// src/pages/Quiz/QuizSolvePage.jsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "../../../../services/supabaseClient";
 import Button from "../../../../components/ui/Button";
 import { useAuth } from "../../../../contexts/AuthProvider";
 import { CheckCircle, XCircle, BadgeX, CircleCheckBigIcon } from "lucide-react";
+import { useQuizData } from "../../../../contexts/QuizDataProvider";
 
 export default function QuizSolvePage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
+
+  const {
+    fetchQuiz,
+    fetchQuizQuestions,
+    fetchStudentQuizAnswers,
+    submitQuizAnswers,
+    questionsMap,
+    answersMap,
+    loading
+  } = useQuizData();
 
   const [quiz, setQuiz] = useState(null);
-  const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [previousAnswers, setPreviousAnswers] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   // جلب بيانات الاختبار والأسئلة
   useEffect(() => {
-    setLoading(true);
-    if (!quizId) return;
+    if (!quizId || !user) return;
     (async () => {
-      const { data: quizData } = await supabase
-        .from("quizzes")
-        .select("*")
-        .eq("id", quizId)
-        .single();
+      setResult(null);
+      setCurrentIndex(0);
+      setAnswers({});
+      setPreviousAnswers(null);
+      const quizData = await fetchQuiz(quizId);
       setQuiz(quizData);
 
-      const { data: qs } = await supabase
-        .from("quiz_questions")
-        .select("*")
-        .eq("quiz_id", quizId)
-        .order("created_at", { ascending: true });
-      setQuestions(qs || []);
-
-      // جلب إجابات الطالب السابقة (إن وجدت)
-      if (user?.id) {
-        const { data: prev } = await supabase
-          .from("quiz_answers")
-          .select("*")
-          .eq("quiz_id", quizId)
-          .eq("user_id", user.id);
-        if (prev && prev.length > 0) {
-          setPreviousAnswers(prev);
-        }
-      }
-      setLoading(false);
+      await fetchQuizQuestions(quizId);
+      const prev = await fetchStudentQuizAnswers(quizId, user.id);
+      if (prev && prev.length > 0) setPreviousAnswers(prev);
     })();
+    // eslint-disable-next-line
   }, [quizId, user?.id]);
 
   // حساب النتيجة إذا وجد إجابات سابقة
   useEffect(() => {
+    const questions = questionsMap[quizId] || [];
     if (previousAnswers && questions.length) {
       let correctCount = 0;
       questions.forEach(q => {
@@ -69,68 +61,40 @@ export default function QuizSolvePage() {
         detail: previousAnswers,
       });
     }
-  }, [previousAnswers, questions]);
+  }, [previousAnswers, questionsMap, quizId]);
 
   // دالة إرسال الإجابات
   async function handleSubmit(e) {
     e.preventDefault();
+    const questions = questionsMap[quizId] || [];
     if (Object.keys(answers).length !== questions.length) {
       alert("أجب على جميع الأسئلة أولاً.");
       return;
     }
     setSubmitting(true);
 
-    // جلب الإجابات السابقة (منع التكرار)
-    const { data: previous } = await supabase
-      .from("quiz_answers")
-      .select("id")
-      .eq("quiz_id", quizId)
-      .eq("user_id", user.id);
-
-    if (previous && previous.length > 0) {
-      alert("لقد قمت بحل هذا الاختبار من قبل.");
-      setSubmitting(false);
-      return;
-    }
-
-    // تجهيز الإجابات للحفظ
-    let correctCount = 0;
-    const toInsert = questions.map(q => {
-      const selected = answers[q.id];
-      const is_correct = selected === q.correct_option;
-      if (is_correct) correctCount += 1;
-      return {
-        quiz_id: quizId,
-        user_id: user.id,
-        question_id: q.id,
-        selected_option: selected,
-        is_correct,
-      };
-    });
-
-    // حفظ جميع الإجابات دفعة واحدة
-    const { error } = await supabase.from("quiz_answers").insert(toInsert);
+    const res = await submitQuizAnswers(quizId, user.id, questions, answers);
     setSubmitting(false);
 
-    if (!error) {
-      setResult({
-        correct: correctCount,
-        total: questions.length,
-        percent: Math.round((correctCount / questions.length) * 100),
-        detail: toInsert,
-      });
+    if (res.alreadySolved) {
+      alert("لقد قمت بحل هذا الاختبار من قبل.");
+      return;
+    }
+    if (res && !res.error) {
+      setResult(res);
     } else {
       alert("حدث خطأ أثناء حفظ الإجابات!");
     }
   }
 
-  // الحماية: تحميل أو لا يوجد بيانات
+  // تحميل أو لا يوجد بيانات
+  const questions = questionsMap[quizId] || [];
   if (loading || !quiz) {
     return <div className="py-10 text-center text-xl">جاري التحميل...</div>;
   }
 
-  // الحماية: لا يوجد أسئلة في الكويز
-  if (!questions || questions.length === 0) {
+  // لا يوجد أسئلة
+  if (!questions.length) {
     return (
       <div className="py-10 text-center text-lg text-gray-500">
         لا يوجد أسئلة في هذا الاختبار حتى الآن.
@@ -153,12 +117,11 @@ export default function QuizSolvePage() {
           {result.percent >= 60 ? "ناجح" : "راسب"}
         </div>
         <div className={`text-lg font-bold px-4 py-2 rounded-xl ${result.percent >= 60 ? "text-green-800" : " text-red-800"}`}>
-            {result.percent >=60 ? <CircleCheckBigIcon size={30}/> : <BadgeX size={30} /> }
+          {result.percent >= 60 ? <CircleCheckBigIcon size={30} /> : <BadgeX size={30} />}
         </div>
         <div className="w-full mt-8">
           <h3 className="font-bold mb-3 text-slate-800 text-center">تفاصيل الإجابات:</h3>
           {questions.map((q, idx) => {
-            // جلب إجابة الطالب
             const ans = (result.detail || []).find(a => a.question_id === q.id);
             const selected = ans?.selected_option;
             const correct = q.correct_option;
@@ -175,11 +138,11 @@ export default function QuizSolvePage() {
                 <div className="grid gap-1 pl-7">
                   {["a", "b", "c", "d"].map(opt => (
                     <div key={opt} className={`
-                      flex items-center gap-2 rounded px-2 py-1
-                      ${correct === opt && !isCorrect ? "bg-green-100 text-green-700 font-bold" : ""}
-                      ${selected === opt && selected !== correct ? "bg-red-100 text-red-700" : ""}
-                      ${selected === opt && selected === correct ? "bg-green-100 text-green-700 font-bold" : ""}
-                    `}>
+                                            flex items-center gap-2 rounded px-2 py-1
+                                            ${correct === opt && !isCorrect ? "bg-green-100 text-green-700 font-bold" : ""}
+                                            ${selected === opt && selected !== correct ? "bg-red-100 text-red-700" : ""}
+                                            ${selected === opt && selected === correct ? "bg-green-100 text-green-700 font-bold" : ""}
+                                        `}>
                       <span className="font-bold">{opt.toUpperCase()}.</span>
                       <span>{q[`option_${opt}`]}</span>
                       {selected === opt && <span className="text-xs ml-2">(إجابتك)</span>}
@@ -221,8 +184,8 @@ export default function QuizSolvePage() {
           <div className="grid gap-2 mt-2">
             {["a", "b", "c", "d"].map(opt => (
               <label key={opt} className={`
-                flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer transition font-medium
-                ${answers[currentQ.id] === opt
+                                flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer transition font-medium
+                                ${answers[currentQ.id] === opt
                   ? "bg-orange-200 border border-orange-500 text-orange-900 shadow"
                   : "bg-white border border-slate-200 hover:bg-orange-50"
                 }`

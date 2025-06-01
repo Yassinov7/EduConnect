@@ -1,103 +1,30 @@
-// src/pages/Quiz/StudentAllResultsPage.jsx
 import { useEffect, useState } from "react";
-import { useAuth } from "../../../../contexts/AuthProvider"; // أو hooks/useAuth حسب مشروعك
+import { useAuth } from "../../../../contexts/AuthProvider";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../../../services/supabaseClient";
 import { LoadingSpinner } from "../../../../components/ui/LoadingSpinner";
 import { Card } from "../../../../components/ui/Card";
 import Button from "../../../../components/ui/Button";
+import { useQuizData } from "../../../../contexts/QuizDataProvider";
 
 export default function StudentAllResultsPage() {
     const { user, profile } = useAuth();
     const navigate = useNavigate();
+    const { fetchStudentAllQuizResults, loading } = useQuizData();
 
     const [courses, setCourses] = useState([]);
     const [quizzes, setQuizzes] = useState({});
     const [results, setResults] = useState({});
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!user) return;
-        fetchData();
+        (async () => {
+            const { courses, quizzesByCourse, resultsMap } = await fetchStudentAllQuizResults(user.id);
+            setCourses(courses);
+            setQuizzes(quizzesByCourse);
+            setResults(resultsMap);
+        })();
         // eslint-disable-next-line
     }, [user]);
-
-    async function fetchData() {
-        setLoading(true);
-
-        // جلب الدورات المسجل بها الطالب
-        const { data: enrollments } = await supabase
-            .from("course_enrollments")
-            .select("course_id, courses(id, title, cover_url, description)")
-            .eq("user_id", user.id);
-
-        const uniqueCourses = (enrollments || [])
-            .map(e => e.courses)
-            .filter((c, i, arr) => c && arr.findIndex(x => x.id === c.id) === i);
-
-        setCourses(uniqueCourses);
-
-        // جلب جميع اختبارات الدورات دفعة واحدة
-        const courseIds = uniqueCourses.map(c => c.id);
-        let allQuizzes = [];
-        let sections = [];
-        if (courseIds.length) {
-            const { data: sectionsData } = await supabase
-                .from("sections")
-                .select("id, course_id")
-                .in("course_id", courseIds);
-
-            sections = sectionsData || [];
-            const sectionIds = sections.map(s => s.id);
-            if (sectionIds.length) {
-                const { data: quizzesData } = await supabase
-                    .from("quizzes")
-                    .select("id, title, section_id")
-                    .in("section_id", sectionIds);
-
-                allQuizzes = quizzesData || [];
-            }
-        }
-        // جمع الكويزز حسب الكورس
-        const quizzesByCourse = {};
-        allQuizzes.forEach(q => {
-            const courseId = sections.find(s => s.id === q.section_id)?.course_id;
-            if (courseId) {
-                if (!quizzesByCourse[courseId]) quizzesByCourse[courseId] = [];
-                quizzesByCourse[courseId].push(q);
-            }
-        });
-        setQuizzes(quizzesByCourse);
-
-        // جلب نتائج الطالب في كل اختبار
-        let allQuizIds = allQuizzes.map(q => q.id);
-        let resultsMap = {};
-        if (allQuizIds.length) {
-            const { data: quizAnswers } = await supabase
-                .from("quiz_answers")
-                .select("quiz_id, is_correct")
-                .eq("user_id", user.id);
-
-            // جمع النتائج: {quiz_id: [answers]}
-            const grouped = {};
-            (quizAnswers || []).forEach(a => {
-                if (!grouped[a.quiz_id]) grouped[a.quiz_id] = [];
-                grouped[a.quiz_id].push(a);
-            });
-
-            // لكل اختبار: النسبة
-            for (const quizId of allQuizIds) {
-                const answers = grouped[quizId] || [];
-                const total = answers.length;
-                const correct = answers.filter(a => a.is_correct).length;
-                const score = total > 0 ? Math.round((correct / total) * 100) : null;
-                resultsMap[quizId] = { total, correct, score };
-            }
-        }
-        setResults(resultsMap);
-
-        setLoading(false);
-    }
 
     if (loading) return <LoadingSpinner text="تحميل نتائجك..." />;
 

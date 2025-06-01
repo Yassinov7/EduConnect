@@ -1,14 +1,13 @@
-// src/pages/Courses/components/QuizFormModal.jsx
 import { useState } from "react";
-import { supabase } from "../../../services/supabaseClient";
 import Button from "../../../components/ui/Button";
 import { toast } from "sonner";
+import { useCourseContent } from "../../../contexts/CourseContentContext";
 // لو عندك QuizQuestionsManager.jsx ضيفه هنا
 
 export default function QuizFormModal({ quiz, sectionId, onClose, onSaved }) {
   const [title, setTitle] = useState(quiz?.title || "");
   const [loading, setLoading] = useState(false);
-  const [quizId, setQuizId] = useState(quiz?.id || null);
+  const { addQuiz, updateQuiz } = useCourseContent();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -18,31 +17,21 @@ export default function QuizFormModal({ quiz, sectionId, onClose, onSaved }) {
       setLoading(false);
       return;
     }
+    let success = false;
     if (quiz) {
       // تعديل
-      const { error } = await supabase.from("quizzes")
-        .update({ title })
-        .eq("id", quiz.id);
-      if (!error) {
-        toast.success("تم تحديث الاختبار");
-        onSaved && onSaved();
-        onClose();
-      } else toast.error(error.message);
+      success = await updateQuiz(quiz.id, sectionId, title);
+      if (success) toast.success("تم تحديث الاختبار");
     } else {
       // إضافة
-      const { data, error } = await supabase.from("quizzes")
-        .insert([{ title, section_id: sectionId }])
-        .select()
-        .single();
-      if (!error) {
-        toast.success("تم إضافة الاختبار! أضف الأسئلة الآن.");
-        setQuizId(data.id);
-        onSaved && onSaved();
-        onClose();
-        // هنا يمكنك فتح إدارة الأسئلة
-      } else toast.error(error.message);
+      success = await addQuiz(sectionId, title);
+      if (success) toast.success("تم إضافة الاختبار! أضف الأسئلة الآن.");
     }
     setLoading(false);
+    if (success) {
+      onSaved && onSaved();
+      onClose();
+    }
   }
 
   return (

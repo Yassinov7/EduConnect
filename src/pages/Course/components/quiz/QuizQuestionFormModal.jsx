@@ -1,10 +1,11 @@
-// components/quiz/QuizQuestionFormModal.jsx
 import { useState, useEffect } from "react";
 import Modal from "../../../../components/ui/Modal";
 import Button from "../../../../components/ui/Button";
-import { supabase } from "../../../../services/supabaseClient";
+import { useQuizData } from "../../../../contexts/QuizDataProvider";
+import { CheckCircle } from "lucide-react";
 
 export default function QuizQuestionFormModal({ quizId, question, onClose, onSaved }) {
+  const { addQuizQuestion, updateQuizQuestion } = useQuizData();
   const [values, setValues] = useState({
     question_text: "",
     option_a: "",
@@ -51,7 +52,6 @@ export default function QuizQuestionFormModal({ quizId, question, onClose, onSav
     }
 
     const data = {
-      quiz_id: quizId,
       question_text: values.question_text.trim(),
       option_a: values.option_a.trim(),
       option_b: values.option_b.trim(),
@@ -61,12 +61,12 @@ export default function QuizQuestionFormModal({ quizId, question, onClose, onSav
     };
 
     if (question && question.id) {
-      await supabase.from("quiz_questions").update(data).eq("id", question.id);
+      await updateQuizQuestion(question.id, quizId, data);
     } else {
-      await supabase.from("quiz_questions").insert([data]);
+      await addQuizQuestion(quizId, data);
     }
     onClose();
-    onSaved();
+    onSaved && onSaved();
   }
 
   return (
@@ -86,33 +86,42 @@ export default function QuizQuestionFormModal({ quizId, question, onClose, onSav
         <label className="font-bold text-blue-900 text-base mt-2 mb-1">
           الخيارات <span className="text-red-600">*</span>
         </label>
-        <div className="grid gap-2">
+        <div className="flex flex-col gap-2">
           {["a", "b", "c", "d"].map((opt) => (
-            <div key={opt} className={`flex items-center gap-3 bg-orange-50 px-3 py-2 rounded-xl shadow-sm`}>
+            <div
+              key={opt}
+              className="flex flex-row items-center gap-2 bg-orange-50 px-3 py-2 rounded-xl shadow-sm"
+            >
               <input
                 type="radio"
                 name="correct_option"
                 checked={values.correct_option === opt}
-                onChange={() => setValues(v => ({ ...v, correct_option: opt }))}
+                onChange={() => setValues((v) => ({ ...v, correct_option: opt }))}
                 className="accent-orange-600 w-5 h-5"
-                required
                 id={`correct_${opt}`}
               />
-              <label htmlFor={`correct_${opt}`} className="font-bold text-orange-800 cursor-pointer w-7">
+              <label
+                htmlFor={`correct_${opt}`}
+                className="font-bold text-orange-800 cursor-pointer w-3"
+              >
                 {opt.toUpperCase()}
               </label>
               <input
-                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-200 outline-none font-medium bg-white"
+                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 min-w-0 focus:ring-2 focus:ring-orange-200 outline-none font-medium bg-white"
                 value={values[`option_${opt}`]}
-                onChange={e => setValues(v => ({
-                  ...v,
-                  [`option_${opt}`]: e.target.value,
-                }))}
+                onChange={(e) =>
+                  setValues((v) => ({
+                    ...v,
+                    [`option_${opt}`]: e.target.value,
+                  }))
+                }
                 required
                 placeholder={`الخيار ${opt.toUpperCase()}`}
               />
               {values.correct_option === opt && (
-                <span className="ml-2 text-xs bg-orange-200 text-orange-900 px-2 py-0.5 rounded-full">الإجابة الصحيحة</span>
+                <span className="text-xs bg-green-100 text-green-500 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  <CheckCircle size={20} />
+                </span>
               )}
             </div>
           ))}

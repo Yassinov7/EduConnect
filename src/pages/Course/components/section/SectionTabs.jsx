@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../../../../services/supabaseClient";
 import Button from "../../../../components/ui/Button";
 import SectionList from "./SectionList";
 import SectionContentList from "./SectionContentList";
@@ -9,10 +8,29 @@ import QuizFormModal from "../QuizFormModal";
 import DeleteConfirmation from "../../../../components/ui/DeleteConfirmation";
 import { FileText, ListChecks } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../../contexts/AuthProvider"; // ضروري
+import { useAuth } from "../../../../contexts/AuthProvider";
+import { useCourseContent } from "../../../../contexts/CourseContentContext";
 
 export default function SectionTabs({ courseId, isTeacher }) {
-  const [sections, setSections] = useState([]);
+  const {
+    sectionsMap,
+    fetchSections,
+    addSection,
+    updateSection,
+    deleteSection,
+    quizzesMap,
+    fetchQuizzes,
+    addQuiz,
+    updateQuiz,
+    deleteQuiz,
+    contentsMap,
+    fetchContents,
+    addContent,
+    updateContent,
+    deleteContent,
+    loading
+  } = useCourseContent();
+
   const [activeSection, setActiveSection] = useState(null);
   const [activeTab, setActiveTab] = useState("contents");
   const [showSectionForm, setShowSectionForm] = useState(false);
@@ -22,88 +40,70 @@ export default function SectionTabs({ courseId, isTeacher }) {
   const [showQuizForm, setShowQuizForm] = useState(false);
   const [editQuiz, setEditQuiz] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [quizSolveStatus, setQuizSolveStatus] = useState({}); // { [quizId]: true/false }
+  const [quizSolveStatus, setQuizSolveStatus] = useState({});
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
 
-  // جلب الأقسام + المحتوى + الكويزات
+  // جلب الأقسام عند تغيير الكورس
   useEffect(() => {
-    fetchSectionsAndContents();
+    fetchSections(courseId);
+    setActiveSection(null);
     // eslint-disable-next-line
   }, [courseId]);
 
-  async function fetchSectionsAndContents() {
-    const { data: sections = [] } = await supabase
-      .from("sections")
-      .select("*")
-      .eq("course_id", courseId)
-      .order("created_at", { ascending: true });
+  // تعيين أول قسم نشط بعد الجلب
+  useEffect(() => {
+    const sections = sectionsMap[courseId] || [];
+    if (sections.length && !activeSection) setActiveSection(sections[0].id);
+  }, [sectionsMap, courseId, activeSection]);
 
-    if (!sections.length) {
-      setSections([]);
-      setActiveSection(null);
-      return;
+  // جلب محتوى واختبارات القسم النشط
+  useEffect(() => {
+    if (activeSection) {
+      fetchContents(activeSection);
+      fetchQuizzes(activeSection);
     }
+  }, [activeSection, fetchContents, fetchQuizzes]);
 
-    const sectionIds = sections.map((s) => s.id);
-    const { data: contents = [] } = await supabase
-      .from("contents")
-      .select("*")
-      .in("section_id", sectionIds);
-
-    const { data: quizzes = [] } = await supabase
-      .from("quizzes")
-      .select("*")
-      .in("section_id", sectionIds);
-
-    const sectionsWithData = sections.map((section) => ({
-      ...section,
-      contents: contents.filter((c) => c.section_id === section.id),
-      quizzes: quizzes.filter((q) => q.section_id === section.id),
-    }));
-
-    setSections(sectionsWithData);
-
-    if (!activeSection && sectionsWithData.length > 0) {
-      setActiveSection(sectionsWithData[0].id);
-    }
-
-    // جلب حالة الحل لكل كويز للطالب فقط
-    if (user && !isTeacher && quizzes.length > 0) {
-      // جلب كل نتائج الطالب لهذه الكويزات دفعة واحدة
-      const quizIds = quizzes.map((q) => q.id);
+  // جلب حالة حل الكويزات (للطالب فقط)
+  useEffect(() => {
+    async function fetchSolvedQuizzes() {
+      if (!user || isTeacher || !activeSection) {
+        setQuizSolveStatus({});
+        return;
+      }
+      const quizzes = quizzesMap[activeSection] || [];
+      if (!quizzes.length) {
+        setQuizSolveStatus({});
+        return;
+      }
+      const quizIds = quizzes.map(q => q.id);
       const { data: solved = [] } = await supabase
         .from("quiz_answers")
         .select("quiz_id")
         .in("quiz_id", quizIds)
         .eq("user_id", user.id);
-
-      // استخراج حالة الحل لكل كويز
       const solvedObj = {};
-      solved.forEach((row) => { solvedObj[row.quiz_id] = true; });
+      solved.forEach(row => { solvedObj[row.quiz_id] = true; });
       setQuizSolveStatus(solvedObj);
-    } else {
-      setQuizSolveStatus({});
     }
-  }
+    fetchSolvedQuizzes();
+    // eslint-disable-next-line
+  }, [activeSection, quizzesMap, user, isTeacher]);
 
-  useEffect(() => {
-    if (sections.length && !activeSection) setActiveSection(sections[0].id);
-  }, [sections, activeSection]);
-
+  const sections = sectionsMap[courseId] || [];
   const currentSection = sections.find((s) => s.id === activeSection);
 
   async function handleDelete(target) {
     if (!target) return;
     if (target.type === "section") {
-      await supabase.from("sections").delete().eq("id", target.id);
+      await deleteSection(target.id, courseId);
     } else if (target.type === "content") {
-      await supabase.from("contents").delete().eq("id", target.id);
+      await deleteContent(target.id, activeSection);
     } else if (target.type === "quiz") {
-      await supabase.from("quizzes").delete().eq("id", target.id);
+      await deleteQuiz(target.id, activeSection);
     }
     setDeleteTarget(null);
-    fetchSectionsAndContents();
   }
 
   return (
@@ -160,7 +160,7 @@ export default function SectionTabs({ courseId, isTeacher }) {
           {activeTab === "contents" && (
             <>
               <SectionContentList
-                contents={currentSection.contents}
+                contents={contentsMap[activeSection] || []}
                 isTeacher={isTeacher}
                 onAdd={() => {
                   setEditContent(null);
@@ -179,7 +179,7 @@ export default function SectionTabs({ courseId, isTeacher }) {
                   content={editContent}
                   sectionId={currentSection.id}
                   onClose={() => setShowContentForm(false)}
-                  onSaved={fetchSectionsAndContents}
+                  onSaved={() => fetchContents(activeSection)}
                 />
               )}
             </>
@@ -188,12 +188,12 @@ export default function SectionTabs({ courseId, isTeacher }) {
           {activeTab === "quizzes" && (
             <>
               <div className="flex flex-col gap-4">
-                {currentSection.quizzes.length === 0 && (
+                {(quizzesMap[activeSection]?.length === 0 || !quizzesMap[activeSection]) && (
                   <div className="text-gray-500">
                     لا يوجد اختبارات بعد في هذا القسم.
                   </div>
                 )}
-                {currentSection.quizzes.map((quiz) => {
+                {(quizzesMap[activeSection] || []).map((quiz) => {
                   const hasSolved = !!quizSolveStatus[quiz.id];
                   return (
                     <div
@@ -272,7 +272,7 @@ export default function SectionTabs({ courseId, isTeacher }) {
                   quiz={editQuiz}
                   sectionId={currentSection.id}
                   onClose={() => setShowQuizForm(false)}
-                  onSaved={fetchSectionsAndContents}
+                  onSaved={() => fetchQuizzes(activeSection)}
                 />
               )}
             </>
@@ -286,7 +286,7 @@ export default function SectionTabs({ courseId, isTeacher }) {
           section={editSection}
           courseId={courseId}
           onClose={() => setShowSectionForm(false)}
-          onSaved={fetchSectionsAndContents}
+          onSaved={() => fetchSections(courseId)}
         />
       )}
 

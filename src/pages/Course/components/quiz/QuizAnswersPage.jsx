@@ -1,10 +1,10 @@
-// src/pages/Quiz/QuizAnswersPage.jsx
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { supabase } from "../../../../services/supabaseClient";
 import { LoadingSpinner } from "../../../../components/ui/LoadingSpinner";
 import { Card } from "../../../../components/ui/Card";
 import Button from "../../../../components/ui/Button";
+import { useQuizData } from "../../../../contexts/QuizDataProvider";
+import { supabase } from "../../../../services/supabaseClient"; // فقط للبروفايل والميتا، ويمكن وضعها في سياق عام
 
 export default function QuizAnswersPage() {
     const { quizId } = useParams();
@@ -12,64 +12,39 @@ export default function QuizAnswersPage() {
     const navigate = useNavigate();
     const studentId = new URLSearchParams(location.search).get("student");
 
-    const [loading, setLoading] = useState(true);
+    const { fetchQuizQuestions, fetchQuizAnswers, questionsMap, answersMap, loading } = useQuizData();
+
     const [profile, setProfile] = useState(null);
     const [quiz, setQuiz] = useState(null);
-    const [questions, setQuestions] = useState([]);
-    const [answers, setAnswers] = useState([]);
 
     useEffect(() => {
         if (!quizId || !studentId) return;
-        fetchAllData();
+        fetchQuizQuestions(quizId);
+        fetchQuizAnswers(quizId, studentId);
+        fetchQuizMetaData();
         // eslint-disable-next-line
     }, [quizId, studentId]);
 
-    async function fetchAllData() {
-        setLoading(true);
-
-        // بيانات الطالب
-        const { data: profileData, error: profileErr } = await supabase
-            .from("profiles")
-            .select("full_name, avatar_url")
-            .eq("user_id", studentId)
-            .single();
-        setProfile(profileData);
-
-        // بيانات الاختبار
-        const { data: quizData, error: quizErr } = await supabase
+    async function fetchQuizMetaData() {
+        // جلب اسم الكويز
+        const { data: quizData } = await supabase
             .from("quizzes")
             .select("id, title")
             .eq("id", quizId)
             .single();
         setQuiz(quizData);
 
-        // جلب الأسئلة حسب هيكل الجدول لديك
-        const { data: questionsData, error: qErr } = await supabase
-            .from("quiz_questions")
-            .select("id, question_text, option_a, option_b, option_c, option_d, correct_option")
-            .eq("quiz_id", quizId);
-
-        if (qErr) {
-            console.error("[DEBUG] خطأ جلب الأسئلة:", qErr);
-        }
-        setQuestions(questionsData || []);
-        console.log("[DEBUG] الأسئلة:", questionsData);
-
-        // جلب إجابات الطالب
-        const { data: answersData, error: ansErr } = await supabase
-            .from("quiz_answers")
-            .select("question_id, selected_option, is_correct, answered_at")
-            .eq("quiz_id", quizId)
-            .eq("user_id", studentId);
-
-        if (ansErr) {
-            console.error("[DEBUG] خطأ جلب إجابات الطالب:", ansErr);
-        }
-        setAnswers(answersData || []);
-        console.log("[DEBUG] إجابات الطالب:", answersData);
-
-        setLoading(false);
+        // جلب بيانات الطالب
+        const { data: profileData } = await supabase
+            .from("profiles")
+            .select("full_name, avatar_url")
+            .eq("user_id", studentId)
+            .single();
+        setProfile(profileData);
     }
+
+    const questions = questionsMap[quizId] || [];
+    const answers = answersMap[`${quizId}_${studentId}`] || [];
 
     if (loading) return <LoadingSpinner text="تحميل بيانات الإجابات..." />;
 
@@ -131,7 +106,6 @@ export default function QuizAnswersPage() {
                         // استخراج نص الإجابة المختارة
                         let selectedText = "لم يجب";
                         if (answer?.selected_option) {
-                            // الحروف: a/b/c/d  --> 0/1/2/3
                             const optIdx = { a: 0, b: 1, c: 2, d: 3 }[answer.selected_option.toLowerCase()];
                             selectedText = options[optIdx] || `الخيار ${answer.selected_option}`;
                         }
