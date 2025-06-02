@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../services/supabaseClient";
 import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import BackButton from "../../components/ui/BackButton";
@@ -35,29 +34,37 @@ export default function PasswordResetPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950">
-      <div className="bg-white p-8 rounded-xl shadow w-full max-w-md flex flex-col gap-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-orange-100">
+      <div className="bg-white p-6 sm:p-10 rounded-3xl shadow-2xl w-full max-w-md flex flex-col gap-4 border-t-4 border-orange-200">
         <BackButton />
-        <h2 className="text-xl font-bold text-orange-500 mb-2">
-          تغيير كلمة المرور
-        </h2>
+        <h2 className="text-xl font-bold text-orange-600 mb-2">تغيير كلمة المرور</h2>
         <form className="flex flex-col gap-4" onSubmit={handleReset}>
-          <Input
-            label="كلمة المرور الجديدة"
-            icon={Lock}
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-          />
-          <Input
-            label="تأكيد كلمة المرور"
-            icon={Lock}
-            type="password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            required
-          />
+          <label className="flex flex-col gap-1">
+            <span className="text-slate-600 font-bold text-sm pr-1">كلمة المرور الجديدة</span>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 text-orange-400" size={20} />
+              <input
+                type="password"
+                className="w-full border border-orange-200 rounded-xl pl-4 pr-10 py-2 bg-orange-50 focus:border-orange-400 transition text-slate-700 font-bold outline-none shadow-sm"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+            </div>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-slate-600 font-bold text-sm pr-1">تأكيد كلمة المرور</span>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 text-orange-400" size={20} />
+              <input
+                type="password"
+                className="w-full border border-orange-200 rounded-xl pl-4 pr-10 py-2 bg-orange-50 focus:border-orange-400 transition text-slate-700 font-bold outline-none shadow-sm"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+              />
+            </div>
+          </label>
           <Button type="submit" disabled={loading}>
             {loading ? "جاري التغيير..." : "تغيير كلمة المرور"}
           </Button>
