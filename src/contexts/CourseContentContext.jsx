@@ -335,6 +335,7 @@ export function CourseContentProvider({ children }) {
       .order("submitted_at", { ascending: false });
     setLoading(false);
     if (error) {
+      
       toast.error("تعذر جلب التسليمات!");
       setSubmissionsMap(prev => ({ ...prev, [assignmentId]: [] }));
       return [];
@@ -443,6 +444,7 @@ export function CourseContentProvider({ children }) {
     toast.error(" تعذر التحديث.");
     return false;
   };
+  
   // 3. قيمة السياق (value)
   const contextValue = {
     // أقسام

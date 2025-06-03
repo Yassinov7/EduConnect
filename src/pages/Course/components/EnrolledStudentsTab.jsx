@@ -69,12 +69,12 @@ export default function EnrolledStudentsTab({ courseId }) {
                             <div className="flex flex-col gap-3 w-full mt-3">
                                 <button
                                     className={`
-                    rounded-xl py-2 font-semibold transition
-                    w-full text-lg
-                    ${student.is_completed
+                                            rounded-xl py-2 font-semibold transition
+                                            w-full text-lg
+                                            ${student.is_completed
                                             ? "bg-slate-700 text-white hover:bg-slate-800"
                                             : "bg-emerald-500 text-white hover:bg-emerald-600"}
-                  `}
+                                            `}
                                     onClick={() =>
                                         updateEnrollmentCompletion(student.id, courseId, !student.is_completed)
                                     }
