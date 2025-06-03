@@ -1,33 +1,34 @@
 import { useEffect, useState } from "react";
 import Button from "../../../../components/ui/Button";
 import SectionList from "./SectionList";
-import SectionContentList from "./SectionContentList";
+import SectionContentTab from "../content/SectionContentTab"; // هذا هو تبويب الدروس
+import SectionAssignmentsTab from "../Assignments/SectionAssignmentsTab"; // تبويب التكليفات
 import SectionFormModal from "../SectionFormModal";
-import ContentFormModal from "../ContentFormModal";
 import QuizFormModal from "../QuizFormModal";
 import DeleteConfirmation from "../../../../components/ui/DeleteConfirmation";
-import { FileText, ListChecks } from "lucide-react";
+import { FileText, ListChecks, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../contexts/AuthProvider";
 import { useCourseContent } from "../../../../contexts/CourseContentContext";
+import { supabase } from "../../../../services/supabaseClient";
+// !! تأكد من أن لديك الملفات التالية في نفس المجلد:
+// SectionContentTab.jsx  (يستقبل props: sectionId, isTeacher, onRefresh)
+// SectionAssignmentsTab.jsx  (يستقبل props: sectionId, isTeacher, onRefresh)
+//  محتوى الاختبارات كما كان
 
 export default function SectionTabs({ courseId, isTeacher }) {
   const {
     sectionsMap,
     fetchSections,
-    addSection,
-    updateSection,
     deleteSection,
     quizzesMap,
     fetchQuizzes,
-    addQuiz,
-    updateQuiz,
     deleteQuiz,
     contentsMap,
     fetchContents,
-    addContent,
-    updateContent,
     deleteContent,
+    assignmentsMap,
+    fetchAssignments,
     loading
   } = useCourseContent();
 
@@ -35,8 +36,6 @@ export default function SectionTabs({ courseId, isTeacher }) {
   const [activeTab, setActiveTab] = useState("contents");
   const [showSectionForm, setShowSectionForm] = useState(false);
   const [editSection, setEditSection] = useState(null);
-  const [showContentForm, setShowContentForm] = useState(false);
-  const [editContent, setEditContent] = useState(null);
   const [showQuizForm, setShowQuizForm] = useState(false);
   const [editQuiz, setEditQuiz] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -57,15 +56,16 @@ export default function SectionTabs({ courseId, isTeacher }) {
     if (sections.length && !activeSection) setActiveSection(sections[0].id);
   }, [sectionsMap, courseId, activeSection]);
 
-  // جلب محتوى واختبارات القسم النشط
+  // جلب محتوى القسم النشط + الاختبارات + التكليفات
   useEffect(() => {
     if (activeSection) {
       fetchContents(activeSection);
       fetchQuizzes(activeSection);
+      fetchAssignments(activeSection);
     }
-  }, [activeSection, fetchContents, fetchQuizzes]);
+  }, [activeSection, fetchContents, fetchQuizzes, fetchAssignments]);
 
-  // جلب حالة حل الكويزات (للطالب فقط)
+  // جلب حالة حل الكويزات (نفس كودك)
   useEffect(() => {
     async function fetchSolvedQuizzes() {
       if (!user || isTeacher || !activeSection) {
@@ -128,7 +128,7 @@ export default function SectionTabs({ courseId, isTeacher }) {
         }}
       />
 
-      {/* تبويبات محتوى/اختبارات */}
+      {/* تبويبات: الدروس / التكليفات / الاختبارات */}
       <div className="flex gap-0.5 mb-3">
         <button
           onClick={() => setActiveTab("contents")}
@@ -139,7 +139,18 @@ export default function SectionTabs({ courseId, isTeacher }) {
             }
             `}
         >
-          <FileText size={18} /> محتوى
+          <FileText size={18} /> الدروس
+        </button>
+        <button
+          onClick={() => setActiveTab("assignments")}
+          className={`flex-1 py-2 rounded-t-xl font-bold transition
+              ${activeTab === "assignments"
+              ? "bg-orange-500 text-white"
+              : "bg-slate-50 text-slate-700 hover:bg-orange-100"
+            }
+            `}
+        >
+          <ClipboardList size={18} /> التكليفات
         </button>
         <button
           onClick={() => setActiveTab("quizzes")}
@@ -154,46 +165,36 @@ export default function SectionTabs({ courseId, isTeacher }) {
         </button>
       </div>
 
-      {/* محتوى القسم */}
+      {/* محتوى القسم حسب التاب */}
       {currentSection && (
         <div>
           {activeTab === "contents" && (
-            <>
-              <SectionContentList
-                contents={contentsMap[activeSection] || []}
-                isTeacher={isTeacher}
-                onAdd={() => {
-                  setEditContent(null);
-                  setShowContentForm(true);
-                }}
-                onEdit={(content) => {
-                  setEditContent(content);
-                  setShowContentForm(true);
-                }}
-                onDelete={(content) =>
-                  setDeleteTarget({ type: "content", ...content })
-                }
-              />
-              {showContentForm && (
-                <ContentFormModal
-                  content={editContent}
-                  sectionId={currentSection.id}
-                  onClose={() => setShowContentForm(false)}
-                  onSaved={() => fetchContents(activeSection)}
-                />
-              )}
-            </>
+            <SectionContentTab
+              sectionId={currentSection.id}
+              contents={contentsMap[currentSection.id] || []}
+              isTeacher={isTeacher}
+              onRefresh={() => fetchContents(currentSection.id)}
+            />
+          )}
+
+          {activeTab === "assignments" && (
+            <SectionAssignmentsTab
+              sectionId={currentSection.id}
+              assignments={assignmentsMap[currentSection.id] || []}
+              isTeacher={isTeacher}
+              onRefresh={() => fetchAssignments(currentSection.id)}
+            />
           )}
 
           {activeTab === "quizzes" && (
             <>
               <div className="flex flex-col gap-4">
-                {(quizzesMap[activeSection]?.length === 0 || !quizzesMap[activeSection]) && (
+                {(quizzesMap[currentSection.id]?.length === 0 || !quizzesMap[currentSection.id]) && (
                   <div className="text-gray-500">
                     لا يوجد اختبارات بعد في هذا القسم.
                   </div>
                 )}
-                {(quizzesMap[activeSection] || []).map((quiz) => {
+                {(quizzesMap[currentSection.id] || []).map((quiz) => {
                   const hasSolved = !!quizSolveStatus[quiz.id];
                   return (
                     <div
@@ -272,7 +273,7 @@ export default function SectionTabs({ courseId, isTeacher }) {
                   quiz={editQuiz}
                   sectionId={currentSection.id}
                   onClose={() => setShowQuizForm(false)}
-                  onSaved={() => fetchQuizzes(activeSection)}
+                  onSaved={() => fetchQuizzes(currentSection.id)}
                 />
               )}
             </>

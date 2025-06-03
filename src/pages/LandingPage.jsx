@@ -12,7 +12,7 @@ import {
 // مكون بطاقة ميزة المنصة
 function FeatureCard({ icon, title, children }) {
   return (
-    <div className="flex flex-col gap-2 bg-orange-50 shadow-sm rounded-2xl p-5 items-center border-t-4 border-orange-200 min-h-[180px]">
+    <div className="flex flex-col gap-2 bg-white shadow-sm rounded-2xl p-5 items-center border-t-4 border-orange-200 min-h-[180px]">
       <div>{icon}</div>
       <div className="text-lg font-bold text-orange-700">{title}</div>
       <div className="text-gray-700 text-center text-sm">{children}</div>
@@ -183,11 +183,11 @@ export default function PlatformShowcasePage() {
                 ) : (
                   <div ref={courseRef} className="keen-slider">
                     {filteredCourses.map(course => (
-                      <div key={course.id} className="keen-slider__slide bg-orange-50 shadow rounded-2xl p-4 flex flex-col items-start min-w-[270px] max-w-xs mx-auto h-[370px] relative overflow-hidden">
+                      <div key={course.id} className="keen-slider__slide bg-orange-50 shadow rounded-2xl p-4 flex flex-col items-start min-w-[270px] max-w-xs mx-auto h-[530px] relative overflow-hidden">
                         <img
                           src={course.cover_url || "https://placehold.co/400x220/orange/white?text=بدون+غلاف"}
                           alt="غلاف الدورة"
-                          className="w-full h-32 object-cover rounded-xl shadow mb-2"
+                          className="w-full h-80 object-cover rounded-xl shadow mb-2"
                           loading="lazy"
                         />
                         <div className="font-extrabold text-lg text-orange-700 mb-1">{course.title}</div>

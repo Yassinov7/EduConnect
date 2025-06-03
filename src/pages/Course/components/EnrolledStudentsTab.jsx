@@ -1,9 +1,7 @@
-// src/pages/Courses/components/EnrolledStudentsTab.jsx
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCoursesData } from "../../../contexts/CoursesDataContext";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
-import Button from "../../../components/ui/Button";
 import { CheckCircle, XCircle, BarChart } from "lucide-react";
 
 export default function EnrolledStudentsTab({ courseId }) {
@@ -15,7 +13,6 @@ export default function EnrolledStudentsTab({ courseId }) {
         loading,
     } = useCoursesData();
 
-    // عند تغيير الكورس: جلب بيانات الطلاب المسجلين
     useEffect(() => {
         if (courseId) fetchEnrolledStudents(courseId);
         // eslint-disable-next-line
@@ -31,69 +28,72 @@ export default function EnrolledStudentsTab({ courseId }) {
 
     return (
         <div>
-            <h2 className="text-xl font-bold mb-4 text-blue-900">الطلاب المسجلون ({students.length})</h2>
-            <div className="overflow-x-auto">
-                <table className="min-w-full bg-white rounded-xl shadow border">
-                    <thead>
-                        <tr className="bg-slate-50 text-orange-700 font-bold text-base">
-                            <th className="py-3 px-4 text-right">#</th>
-                            <th className="py-3 px-4 text-right">اسم الطالب</th>
-                            <th className="py-3 px-4 text-right">الحالة</th>
-                            <th className="py-3 px-4 text-right">إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {students.map((student, idx) => {
-                            const profile = student.profile || {};
-                            return (
-                                <tr key={student.id} className="border-b hover:bg-orange-50 transition">
-                                    <td className="py-2 px-4">{idx + 1}</td>
-                                    <td className="py-2 px-4 flex items-center gap-2">
-                                        <img
-                                            src={profile.avatar_url || "https://placehold.co/32x32"}
-                                            alt="avatar"
-                                            className="w-8 h-8 rounded-full border"
-                                        />
-                                        <span>{profile.full_name || "غير معروف"}</span>
-                                    </td>
-                                    <td className="py-2 px-4">
-                                        {student.is_completed ? (
-                                            <span className="flex items-center gap-1 text-green-700 font-bold">
-                                                <CheckCircle size={18} /> أتم الدورة
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center gap-1 text-orange-700 font-bold">
-                                                <XCircle size={18} /> لم يتمم الدورة
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td className="py-2 px-4 flex gap-2">
-                                        <Button
-                                            size="sm"
-                                            className={
-                                                student.is_completed
-                                                    ? "bg-slate-600 text-white hover:bg-slate-700"
-                                                    : "bg-emerald-500 text-white hover:bg-green-600"
-                                            }
-                                            onClick={() =>
-                                                updateEnrollmentCompletion(student.id, courseId, !student.is_completed)
-                                            }
-                                        >
-                                            {student.is_completed ? "إلغاء الإتمام" : "إتمام الدورة"}
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            className="bg-blue-900 text-white hover:bg-blue-700 flex items-center gap-1"
-                                            onClick={() => navigate(`/quiz/results/${courseId}/${student.user_id}`)}
-                                        >
-                                            <BarChart size={18} /> نتائج الطالب
-                                        </Button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+            <h2 className="text-2xl font-bold mb-6 text-blue-900 text-center">
+                الطلاب المسجلون ({students.length})
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-7">
+                {students.map((student, idx) => {
+                    const profile = student.profile || {};
+                    return (
+                        <div
+                            key={student.id}
+                            className="
+                bg-white rounded-2xl shadow-lg border border-orange-100
+                flex flex-col items-center gap-5 py-7 px-6
+                min-h-[260px]
+                transition hover:shadow-2xl hover:border-orange-300
+              "
+                        >
+                            <img
+                                src={profile.avatar_url || "https://placehold.co/80x80"}
+                                alt="avatar"
+                                className="w-20 h-20 rounded-full border-2 border-orange-300 shadow"
+                            />
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="font-bold text-xl text-orange-700 tracking-wide">
+                                    {profile.full_name || "غير معروف"}
+                                </div>
+                                <div className="text-gray-500 text-xs">#{idx + 1}</div>
+                                <div>
+                                    {student.is_completed ? (
+                                        <span className="flex items-center gap-1 text-green-700 font-bold text-base mt-2">
+                                            <CheckCircle size={22} /> أتم الدورة
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-1 text-orange-700 font-bold text-base mt-2">
+                                            <XCircle size={22} /> لم يتمم الدورة
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-3 w-full mt-3">
+                                <button
+                                    className={`
+                    rounded-xl py-2 font-semibold transition
+                    w-full text-lg
+                    ${student.is_completed
+                                            ? "bg-slate-700 text-white hover:bg-slate-800"
+                                            : "bg-emerald-500 text-white hover:bg-emerald-600"}
+                  `}
+                                    onClick={() =>
+                                        updateEnrollmentCompletion(student.id, courseId, !student.is_completed)
+                                    }
+                                >
+                                    {student.is_completed ? "إلغاء الإتمام" : "إتمام الدورة"}
+                                </button>
+                                <button
+                                    className="
+                    rounded-xl py-2 font-semibold w-full flex items-center justify-center gap-2
+                    bg-blue-900 text-white hover:bg-blue-700 transition text-lg
+                  "
+                                    onClick={() => navigate(`/quiz/results/${courseId}/${student.user_id}`)}
+                                >
+                                    <BarChart size={20} /> نتائج الطالب
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
