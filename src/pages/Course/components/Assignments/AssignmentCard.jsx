@@ -1,4 +1,3 @@
-
 // src/pages/Course/components/AssignmentCard.jsx
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../../contexts/AuthProvider";
@@ -28,8 +27,9 @@ export default function AssignmentCard({ assignment, isTeacher, onShowSubmission
     ? (submissionsMap[assignment.id]?.find(s => s.user_id === user?.id) || null)
     : null;
 
+  // دالة رفع الملف مع منع السلوك الافتراضي للنموذج
   const handleUpload = async (e) => {
-    if (e) e.preventDefault();
+    e.preventDefault();
     if (!file) return;
     setUploading(true);
     await uploadSubmission({
@@ -83,21 +83,21 @@ export default function AssignmentCard({ assignment, isTeacher, onShowSubmission
             </div>
           </div>
         ) : (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-3">
+          <form onSubmit={handleUpload} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-3">
             <input
               type="file"
-              onChange={e => {
-                e.preventDefault();
-                setFile(e.target.files[0]);
-              }}
+              onChange={e => setFile(e.target.files[0])}
               className="block w-full sm:w-auto"
+              required
             />
-            <Button
-              type="button"
-              onClick={handleUpload} disabled={uploading || !file} className="w-full sm:w-auto">
+            <button
+              type="submit"
+              disabled={uploading || !file}
+              className="w-full sm:w-auto bg-orange-600 text-white rounded px-4 py-2"
+            >
               {uploading ? "جاري الرفع..." : "رفع التسليم"}
-            </Button>
-          </div>
+            </button>
+          </form>
         )
       )}
     </div>
