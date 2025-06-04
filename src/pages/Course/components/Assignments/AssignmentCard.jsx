@@ -31,7 +31,8 @@ export default function AssignmentCard({
       : null;
 
   // رفع ملف التسليم
-  const handleUpload = async () => {
+  const handleUpload = async (e) => {
+    if (e) e.preventDfault();
     if (!file) return;
     setUploading(true);
     await uploadSubmission({
@@ -111,6 +112,7 @@ export default function AssignmentCard({
             className="block w-full sm:w-auto rounded border border-gray-300 p-1"
           />
           <Button
+          type="button"
             onClick={handleUpload}
             disabled={uploading || !file}
             className="w-full sm:w-auto"
