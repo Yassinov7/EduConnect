@@ -2,34 +2,25 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../../contexts/AuthProvider";
 import { useCourseContent } from "../../../../contexts/CourseContentContext";
-import Button from "../../../../components/ui/Button";
 
 export default function AssignmentCard({ assignment, isTeacher, onShowSubmissions, onEdit, onDelete }) {
   const { user } = useAuth();
-  const {
-    submissionsMap,
-    uploadSubmission,
-    fetchSubmissions,
-  } = useCourseContent();
+  const { submissionsMap, uploadSubmission, fetchSubmissions } = useCourseContent();
 
-  const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  // جلب تسليمات الطالب عند أول تحميل
   useEffect(() => {
     if (!isTeacher && assignment?.id) {
       fetchSubmissions(assignment.id);
     }
   }, [assignment?.id, isTeacher, fetchSubmissions]);
 
-  // الحصول على تسليم الطالب
   const submission = !isTeacher
     ? (submissionsMap[assignment.id]?.find(s => s.user_id === user?.id) || null)
     : null;
 
-  // دالة رفع الملف مع منع السلوك الافتراضي للنموذج
-  const handleUpload = async (e) => {
-    e.preventDefault();
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
     await uploadSubmission({
@@ -38,8 +29,7 @@ export default function AssignmentCard({ assignment, isTeacher, onShowSubmission
       file,
     });
     setUploading(false);
-    setFile(null);
-    await fetchSubmissions(assignment.id); // إعادة جلب التسليمات بعد الرفع
+    await fetchSubmissions(assignment.id);
   };
 
   return (
@@ -55,9 +45,9 @@ export default function AssignmentCard({ assignment, isTeacher, onShowSubmission
 
         {isTeacher && (
           <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
-            <Button className="!bg-blue-600 hover:!bg-blue-500 w-full sm:w-auto" onClick={onShowSubmissions}>عرض</Button>
-            <Button className="!bg-green-600 hover:!bg-green-500 w-full sm:w-auto" onClick={onEdit}>تعديل</Button>
-            <Button className="!bg-red-600 hover:!bg-red-500 w-full sm:w-auto" onClick={onDelete}>حذف</Button>
+            <button className="bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1 w-full sm:w-auto" onClick={onShowSubmissions}>عرض</button>
+            <button className="bg-green-600 hover:bg-green-500 text-white rounded px-3 py-1 w-full sm:w-auto" onClick={onEdit}>تعديل</button>
+            <button className="bg-red-600 hover:bg-red-500 text-white rounded px-3 py-1 w-full sm:w-auto" onClick={onDelete}>حذف</button>
           </div>
         )}
       </div>
@@ -83,21 +73,15 @@ export default function AssignmentCard({ assignment, isTeacher, onShowSubmission
             </div>
           </div>
         ) : (
-          <form onSubmit={handleUpload} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-3">
+          <div className="mt-3">
             <input
               type="file"
-              onChange={e => setFile(e.target.files[0])}
+              onChange={handleFileChange}
               className="block w-full sm:w-auto"
-              required
+              disabled={uploading}
             />
-            <button
-              type="submit"
-              disabled={uploading || !file}
-              className="w-full sm:w-auto bg-orange-600 text-white rounded px-4 py-2"
-            >
-              {uploading ? "جاري الرفع..." : "رفع التسليم"}
-            </button>
-          </form>
+            {uploading && <p className="text-orange-600 mt-2">جاري رفع الملف...</p>}
+          </div>
         )
       )}
     </div>
