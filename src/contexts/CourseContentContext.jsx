@@ -330,12 +330,27 @@ export function CourseContentProvider({ children }) {
     setLoading(true);
     const { data, error } = await supabase
       .from("assignment_submissions")
-      .select("*, profiles:user_id(full_name, avatar_url)")
+      .select(`
+                *,
+                assignments (
+                  id,
+                  section_id,
+                  sections (
+                    id,
+                    course_id
+                  )
+                ),
+                profiles (
+                  user_id,
+                  full_name,
+                  avatar_url
+                )
+              `)
       .eq("assignment_id", assignmentId)
       .order("submitted_at", { ascending: false });
     setLoading(false);
     if (error) {
-      
+
       toast.error("تعذر جلب التسليمات!");
       setSubmissionsMap(prev => ({ ...prev, [assignmentId]: [] }));
       return [];
@@ -444,7 +459,7 @@ export function CourseContentProvider({ children }) {
     toast.error(" تعذر التحديث.");
     return false;
   };
-  
+
   // 3. قيمة السياق (value)
   const contextValue = {
     // أقسام

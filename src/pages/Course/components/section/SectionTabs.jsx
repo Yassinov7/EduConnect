@@ -173,6 +173,7 @@ export default function SectionTabs({ courseId, isTeacher }) {
               sectionId={currentSection.id}
               contents={contentsMap[currentSection.id] || []}
               isTeacher={isTeacher}
+              courseId={courseId}
               onRefresh={() => fetchContents(currentSection.id)}
             />
           )}

@@ -5,6 +5,7 @@ import { CourseContentProvider } from "./CourseContentContext";
 import { QuizDataProvider } from "./QuizDataProvider";
 import { TeacherDashboardDataProvider } from "./TeacherDashboardDataProvider";
 import { StudentDashboardDataProvider } from './StudentDashboardDataProvider';
+import { ProgressProvider } from "./ProgressContext";
 export default function AppProviders({ children }) {
   const { user, loading } = useAuth();
 
@@ -16,11 +17,13 @@ export default function AppProviders({ children }) {
       <CoursesDataProvider>
         <CourseContentProvider>
           <QuizDataProvider>
+            <ProgressProvider>
             <TeacherDashboardDataProvider userId={user?.id}>
               <StudentDashboardDataProvider userId={user?.id}>
                 {children}
               </StudentDashboardDataProvider>
             </TeacherDashboardDataProvider>
+            </ProgressProvider>
           </QuizDataProvider>
         </CourseContentProvider>
       </CoursesDataProvider>

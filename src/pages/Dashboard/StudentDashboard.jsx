@@ -3,6 +3,7 @@ import { useStudentDashboardData } from "../../contexts/StudentDashboardDataProv
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
+import { ProgressInCoursesSection } from "./components/ProgressInCoursesSection";
 import { BookOpen, Trophy, BookCheck, CheckCircle, AlertCircle, XCircle } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -46,6 +47,8 @@ export default function StudentDashboard() {
           <StatCard icon={<Trophy size={28} />} label="نسبة الإجابات الصحيحة" value={averageScore} />
           <StatCard icon={<Trophy size={28} />} label="أفضل نتيجة اختبار" value={bestScore} />
         </div>
+        {/* قسم التقدم الجديد */}
+        <ProgressInCoursesSection courses={myCourses} />
         {/* دائرة النسبة المئوية للتقدم */}
         <div className="w-full h-52 bg-slate-50 rounded-xl shadow mb-4 p-2 flex flex-col items-center justify-center">
           <span className="text-xs font-bold text-orange-400 px-2 mb-2">نسبة إكمال الدورات</span>

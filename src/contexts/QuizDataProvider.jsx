@@ -85,7 +85,7 @@ export function QuizDataProvider({ children }) {
         setLoading(true);
         const { data, error } = await supabase
             .from("quizzes")
-            .select("*")
+            .select("*, section:sections(id, course_id)")
             .eq("id", quizId)
             .single();
         setLoading(false);
@@ -96,6 +96,7 @@ export function QuizDataProvider({ children }) {
         return data;
     }, []);
 
+    
     // جلب إجابات طالب على كويز
     const fetchStudentQuizAnswers = useCallback(async (quizId, userId) => {
         setLoading(true);

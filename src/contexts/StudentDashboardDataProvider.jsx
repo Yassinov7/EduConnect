@@ -27,7 +27,18 @@ export function StudentDashboardDataProvider({ userId, children }) {
       // 1. الدورات المسجل فيها الطالب
       const { data: enrollments = [] } = await supabase
         .from("course_enrollments")
-        .select("*, course:courses(*)")
+        .select(`
+                  *,
+                  course:courses (
+                    *,
+                    sections (
+                      *,
+                      contents (*),
+                      quizzes (*),
+                      assignments (*)
+                    )
+                  )
+                `)
         .eq("user_id", userId);
 
       const myCourses = enrollments.map(e => e.course);
@@ -70,7 +81,7 @@ export function StudentDashboardDataProvider({ userId, children }) {
       // تحويلها لمصفوفة
       const byQuiz = Object.entries(quizMap).map(([quiz_id, stats]) => ({
         quiz_id,
-        quiz_title:quizzesTitlesMap[quiz_id] || `$(quiz_id)`,
+        quiz_title: quizzesTitlesMap[quiz_id] || `$(quiz_id)`,
         total: stats.total,
         correct: stats.correct,
         percent: stats.total ? Math.round((stats.correct / stats.total) * 100) : 0,

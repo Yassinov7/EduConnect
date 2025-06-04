@@ -1,15 +1,39 @@
+// src/pages/Course/components/AssignmentSubmissionsList.jsx
 import { useCourseContent } from "../../../../contexts/CourseContentContext";
 import Button from "../../../../components/ui/Button";
 import { useEffect } from "react";
+import { useProgress } from "../../../../contexts/ProgressContext";
 
 export default function AssignmentSubmissionsList({ assignmentId }) {
   const { submissionsMap, fetchSubmissions, updateSubmissionStatus } = useCourseContent();
+  const { markAssignmentDone } = useProgress();
 
   useEffect(() => {
     fetchSubmissions(assignmentId);
   }, [assignmentId, fetchSubmissions]);
 
-  const submissions = submissionsMap[assignmentId] || [];
+  const submissions = (submissionsMap[assignmentId] || []).map(sub => ({
+    ...sub,
+    section_id: sub.assignments?.section_id,
+    course_id: sub.assignments?.sections?.course_id,
+  }));
+
+
+  // دالة قبول التسليم + تسجيل التقدم
+  async function handleApprove(sub) {
+  console.log("تمت الموافقة على:", sub);
+  await updateSubmissionStatus(sub.id, assignmentId, "approved");
+  if (sub.user_id && sub.assignment_id && sub.section_id && sub.course_id) {
+    await markAssignmentDone(
+      sub.user_id,
+      sub.course_id,
+      sub.section_id,
+      sub.assignment_id
+    );
+  } else {
+    console.error("نقص معرفات في التسليم", sub);
+  }
+}
 
   if (!submissions.length)
     return <div className="text-gray-400 text-center py-4">لا توجد تسليمات بعد.</div>;
@@ -67,7 +91,7 @@ export default function AssignmentSubmissionsList({ assignmentId }) {
               <Button
                 size="sm"
                 className="bg-green-600 text-white hover:bg-green-700"
-                onClick={() => updateSubmissionStatus(sub.id, assignmentId, "approved")}
+                onClick={() => handleApprove(sub)}
               >
                 قبول
               </Button>

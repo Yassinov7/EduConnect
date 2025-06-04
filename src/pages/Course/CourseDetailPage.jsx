@@ -14,6 +14,7 @@ import CommentsTab from "./components/comments/CommentsTab";
 import EnrolledStudentsTab from "./components/EnrolledStudentsTab";
 import DeleteConfirmation from "../../components/ui/DeleteConfirmation";
 import CourseFormModal from "./CourseFormModal";
+import CourseProgressBar from "./CourseProgressBar";
 
 // ⭐ مكون عرض النجوم
 function StarRating({ value, size = 19 }) {
@@ -126,6 +127,7 @@ export default function CourseDetailPage() {
   return (
     <div className="min-h-screen bg-slate-100 pt-10 pb-16 px-2 sm:px-6">
       <div className="max-w-4xl mx-auto">
+
         {/* بيانات الدورة */}
         <div className="flex flex-col md:flex-row md:items-center gap-6 bg-white shadow-lg rounded-xl p-6 mb-8 relative">
           <img
@@ -183,7 +185,7 @@ export default function CourseDetailPage() {
             )}
           </div>
         </div>
-
+            {!isTeacher && <CourseProgressBar userId={user.id} courseId={course.id} />}
         {/* تبويبات المحتوى */}
         <div className="bg-white rounded-xl shadow mb-8 flex gap-0.5">
           <TabButton

@@ -4,11 +4,13 @@ import Button from "../../../../components/ui/Button";
 import { useAuth } from "../../../../contexts/AuthProvider";
 import { CheckCircle, XCircle, BadgeX, CircleCheckBigIcon } from "lucide-react";
 import { useQuizData } from "../../../../contexts/QuizDataProvider";
+import { useProgress } from "../../../../contexts/ProgressContext"; // 1. استيراد السياق
 
 export default function QuizSolvePage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { markQuizCompleted } = useProgress(); // 2. استخراج دالة التقدم
 
   const {
     fetchQuiz,
@@ -16,7 +18,6 @@ export default function QuizSolvePage() {
     fetchStudentQuizAnswers,
     submitQuizAnswers,
     questionsMap,
-    answersMap,
     loading
   } = useQuizData();
 
@@ -82,10 +83,29 @@ export default function QuizSolvePage() {
     }
     if (res && !res.error) {
       setResult(res);
+
+      // === هنا يتم تسجيل التقدم بعد حل الاختبار ===
+      if (
+        quiz &&
+        quiz.id &&
+        quiz.section_id &&
+        quiz.section &&
+        quiz.section.course_id
+      ) {
+        await markQuizCompleted(
+          user.id,
+          quiz.section.course_id, // courseId
+          quiz.section_id,        // sectionId
+          quiz.id                 // quizId
+        );
+      }
+      // === انتهى ===
     } else {
       alert("حدث خطأ أثناء حفظ الإجابات!");
     }
   }
+
+  // ... باقي الكود كما هو بدون تعديل ...
 
   // تحميل أو لا يوجد بيانات
   const questions = questionsMap[quizId] || [];
@@ -93,7 +113,6 @@ export default function QuizSolvePage() {
     return <div className="py-10 text-center text-xl">جاري التحميل...</div>;
   }
 
-  // لا يوجد أسئلة
   if (!questions.length) {
     return (
       <div className="py-10 text-center text-lg text-gray-500">
