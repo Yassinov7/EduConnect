@@ -21,7 +21,7 @@ export default function AssignmentCard({ assignment, isTeacher, onShowSubmission
     if (!isTeacher && assignment?.id) {
       fetchSubmissions(assignment.id);
     }
-  }, [assignment?.id, isTeacher]);
+  }, [assignment?.id, isTeacher, fetchSubmissions]);
 
   // الحصول على تسليم الطالب
   const submission = !isTeacher
@@ -86,7 +86,10 @@ export default function AssignmentCard({ assignment, isTeacher, onShowSubmission
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-3">
             <input
               type="file"
-              onChange={e => setFile(e.target.files[0])}
+              onChange={e => {
+                e.preventDefault();
+                setFile(e.target.files[0]);
+              }}
               className="block w-full sm:w-auto"
             />
             <Button
