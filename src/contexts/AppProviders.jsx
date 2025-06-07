@@ -6,6 +6,8 @@ import { QuizDataProvider } from "./QuizDataProvider";
 import { TeacherDashboardDataProvider } from "./TeacherDashboardDataProvider";
 import { StudentDashboardDataProvider } from './StudentDashboardDataProvider';
 import { ProgressProvider } from "./ProgressContext";
+import { ChatProvider } from "./ChatContext";
+
 export default function AppProviders({ children }) {
   const { user, loading } = useAuth();
 
@@ -20,7 +22,9 @@ export default function AppProviders({ children }) {
             <ProgressProvider>
             <TeacherDashboardDataProvider userId={user?.id}>
               <StudentDashboardDataProvider userId={user?.id}>
+                <ChatProvider userId={user?.id}>
                 {children}
+                </ChatProvider> 
               </StudentDashboardDataProvider>
             </TeacherDashboardDataProvider>
             </ProgressProvider>
