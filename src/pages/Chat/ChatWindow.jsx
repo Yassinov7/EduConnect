@@ -57,7 +57,7 @@ export default function ChatWindow({ chatId, otherUser, currentUser }) {
                 <div ref={bottomRef} />
             </div>
             {/* إدخال الرسالة */}
-            <div className="border-t p-2 md:p-3 bg-white">
+            <div className="border-t p-2 md:p-3  bg-white">
                 <ChatInput chatId={chatId} />
             </div>
         </div>

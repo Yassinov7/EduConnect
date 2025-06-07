@@ -17,7 +17,7 @@ export default function ChatInput({ chatId }) {
     return (
         <form className="flex gap-2 items-center" onSubmit={handleSend}>
             <input
-                className="flex-1 p-3 rounded-xl border border-slate-200 outline-orange-400 bg-white text-base"
+                className="flex-1 p-3 min-w-0 rounded-xl border border-slate-200 outline-orange-400 bg-white text-base"
                 placeholder="اكتب رسالة..."
                 value={value}
                 onChange={e => setValue(e.target.value)}
@@ -27,7 +27,7 @@ export default function ChatInput({ chatId }) {
             />
             <Button
                 type="submit"
-                className="!bg-orange-500 !text-white !shadow-none px-4 py-2"
+                className="!bg-orange-500 w-20 h-13 !text-white !shadow-none px-4 py-2"
                 disabled={!value.trim()}
             >
                 <Send size={18} className="mr-1" /> إرسال
