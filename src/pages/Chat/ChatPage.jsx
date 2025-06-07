@@ -4,7 +4,6 @@ import { useChat } from "../../contexts/ChatContext";
 import ChatSidebar from "./ChatSidebar";
 import ChatWindow from "./ChatWindow";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
-import Card from "../../components/ui/Card";
 import { toast } from "sonner";
 
 const NAVBAR_HEIGHT = 80;
@@ -14,28 +13,35 @@ export default function ChatPage() {
   const { user, profile } = useAuth();
   const {
     chats,
+    messages,
     activeChatId,
     setActiveChatId,
-    messages,
     startChat,
     loading,
     error,
   } = useChat();
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showSidebar, setShowSidebar] = useState(false);
 
-  // ترتيب المحادثات حسب آخر رسالة (اختياري)
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showSidebar, setShowSidebar] = useState(window.innerWidth >= 768);
+
+  // ترتيب المحادثات حسب آخر رسالة
   const sortedChats = [...chats].sort((a, b) => {
-    const aLast = (messages.filter(m => m.chat_id === a.id).slice(-1)[0]?.created_at) || a.created_at;
-    const bLast = (messages.filter(m => m.chat_id === b.id).slice(-1)[0]?.created_at) || b.created_at;
+    const aLast = messages.filter(m => m.chat_id === a.id).slice(-1)[0]?.created_at || a.created_at;
+    const bLast = messages.filter(m => m.chat_id === b.id).slice(-1)[0]?.created_at || b.created_at;
     return new Date(bLast) - new Date(aLast);
   });
 
-  const handleOpenChat = (chat) => {
+  // سايدبار responsive عند تغيير حجم الشاشة
+  // اجعل السايدبار ظاهرًا دائمًا على الديسكتوب
+  window.onresize = () => {
+    if (window.innerWidth >= 768) setShowSidebar(true);
+  };
+
+  const handleOpenChat = chat => {
     setActiveChatId(chat.id);
     const contact = chat.user1_id === user.id ? chat.user2 : chat.user1;
     setSelectedUser(contact);
-    setShowSidebar(false);
+    if (window.innerWidth < 768) setShowSidebar(false);
   };
 
   const handleSelectUser = async (userInfo) => {
@@ -43,8 +49,8 @@ export default function ChatPage() {
       const chatId = await startChat(userInfo.user_id);
       setActiveChatId(chatId);
       setSelectedUser(userInfo);
-      setShowSidebar(false);
-    } catch (err) {
+      if (window.innerWidth < 768) setShowSidebar(false);
+    } catch {
       toast.error("تعذر بدء المحادثة!");
     }
   };
@@ -56,78 +62,70 @@ export default function ChatPage() {
   const pageHeight = `calc(100vh - ${NAVBAR_HEIGHT}px - ${BOTTOMNAV_HEIGHT}px)`;
 
   return (
-    <div
-      className="noto bg-slate-100 flex flex-col items-center"
-      style={{
-        minHeight: pageHeight,
-        maxHeight: pageHeight,
-        paddingTop: NAVBAR_HEIGHT,
-        paddingBottom: BOTTOMNAV_HEIGHT,
-        overflow: "hidden"
-      }}
-    >
-      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-3 md:gap-4 min-h-[400px] relative"
+    <div className="flex w-full h-[calc(100vh-80px-64px)] bg-slate-50 relative">
+      {/* زر القائمة الجانبية للجوال */}
+      {!showSidebar && (
+        <button
+          className="md:hidden fixed top-24 right-4 z-40 w-12 h-12 bg-orange-500 text-white rounded-full shadow-lg flex items-center justify-center"
+          onClick={() => setShowSidebar(true)}
+        >
+          <span className="text-2xl">☰</span>
+        </button>
+      )}
+
+      {/* Overlay خلفية سوداء للجوال فقط */}
+      {showSidebar && (
+        <div
+          className="fixed inset-0 z-30 bg-black/30 md:hidden"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          z-40 md:static fixed right-0 top-0 h-full w-80 max-w-full
+          bg-white flex-shrink-0 flex flex-col transition-transform
+          ${showSidebar ? "translate-x-0" : "translate-x-full"}
+          md:translate-x-0 md:shadow-none shadow-2xl
+          md:h-full md:rounded-s-2xl
+        `}
         style={{
+          minHeight: "100%",
           height: "100%",
-          minHeight: "400px"
+          borderRadius: window.innerWidth < 768 ? "0px" : "1.25rem",
         }}
       >
+        <ChatSidebar
+          currentUserId={user.id}
+          selectedUser={selectedUser}
+          setSelectedUser={setSelectedUser}
+          onSelectUser={handleSelectUser}
+          openChat={handleOpenChat}
+          chats={sortedChats}
+          onCloseMobile={() => setShowSidebar(false)}
+        />
+      </aside>
 
-        {/* زر القائمة الجانبية للجوال */}
-        <button
-          className="md:hidden fixed top-20 right-3 z-30 w-10 h-10 mt-3 bg-orange-500 text-white rounded-full p-2 shadow-lg"
-          onClick={() => setShowSidebar(v => !v)}
-        >
-          ☰
-        </button>
-
-        {/* Sidebar */}
-        <div
-          className={`
-            fixed inset-0 z-20 bg-black/40 transition md:static md:z-auto md:bg-transparent
-            ${showSidebar ? "block" : "hidden"} md:block
-          `}
-          onClick={() => setShowSidebar(false)}
-        >
-          <Card
-            className={`
-              h-full max-h-[80vh] w-11/12 mx-auto mt-6
-              md:mt-0 md:mx-0 md:w-full md:max-w-xs md:relative
-              shadow-xl md:shadow
-              p-0
-              ${showSidebar ? "block" : "hidden"} md:block
-            `}
-            onClick={e => e.stopPropagation()}
-          >
-            <ChatSidebar
-              currentUserId={user.id}
-              onSelectUser={handleSelectUser}
-              selectedUser={selectedUser}
-              openChat={handleOpenChat}
-              chats={sortedChats}
-            />
-          </Card>
-        </div>
-
-        {/* Main Chat Window */}
-        <div className="flex-1 flex flex-col mt-4 md:mt-0" style={{ minHeight: "100%", height: "100%" }}>
-          {activeChatId && selectedUser ? (
-            <ChatWindow
-              key={activeChatId}
-              chatId={activeChatId}
-              otherUser={selectedUser}
-              currentUser={profile}
-              pageHeight={pageHeight}
-              navbarHeight={NAVBAR_HEIGHT}
-              bottomnavHeight={BOTTOMNAV_HEIGHT}
-            />
-          ) : (
-            <div className="flex flex-1 items-center justify-center text-gray-400 text-lg">
-              اختر محادثة أو ابدأ محادثة جديدة من القائمة
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Main Chat Window */}
+      <main className="flex-1 flex flex-col h-full max-w-full relative">
+        {activeChatId && selectedUser ? (
+          <ChatWindow
+            key={activeChatId}
+            chatId={activeChatId}
+            otherUser={selectedUser}
+            currentUser={profile}
+            pageHeight={pageHeight}
+            navbarHeight={NAVBAR_HEIGHT}
+            bottomnavHeight={BOTTOMNAV_HEIGHT}
+            onBack={() => setShowSidebar(true)}
+          />
+        ) : (
+          <div className="flex flex-1 items-center justify-center text-gray-400 text-xl font-semibold">
+            اختر محادثة أو ابدأ جديدة من القائمة
+          </div>
+        )}
+      </main>
     </div>
   );
 }
