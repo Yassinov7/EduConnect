@@ -22,8 +22,10 @@ import QuizAnswersPage from "./pages/Course/components/quiz/QuizAnswersPage";
 import StudentAllResultsPage from "./pages/Course/components/quiz/StudentAllResultsPage";
 import HomeRedirector from "./routes/HomeRedirector";
 import About from "./pages/About";
-
+import { supabase } from "./services/supabaseClient";
 export default function App() {
+  window.supabase = supabase;
+  
   return (
     <AuthProvider>
       <AppProviders>

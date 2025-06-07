@@ -7,10 +7,11 @@ import { TeacherDashboardDataProvider } from "./TeacherDashboardDataProvider";
 import { StudentDashboardDataProvider } from './StudentDashboardDataProvider';
 import { ProgressProvider } from "./ProgressContext";
 import { ChatProvider } from "./ChatContext";
+import { ContactsProvider } from "./ContactsContext";
 
 export default function AppProviders({ children }) {
-  const { user, loading } = useAuth();
-
+  const { user, profile, loading } = useAuth();
+  
   if (loading) return null; // أو spinner مؤقت
 
   return (
@@ -20,13 +21,15 @@ export default function AppProviders({ children }) {
         <CourseContentProvider>
           <QuizDataProvider>
             <ProgressProvider>
-            <TeacherDashboardDataProvider userId={user?.id}>
-              <StudentDashboardDataProvider userId={user?.id}>
-                <ChatProvider userId={user?.id}>
-                {children}
-                </ChatProvider> 
-              </StudentDashboardDataProvider>
-            </TeacherDashboardDataProvider>
+              <TeacherDashboardDataProvider userId={user?.id}>
+                <StudentDashboardDataProvider userId={user?.id}>
+                  <ChatProvider userId={user?.id}>
+                    <ContactsProvider currentUser={profile}>
+                      {children}
+                    </ContactsProvider>
+                  </ChatProvider>
+                </StudentDashboardDataProvider>
+              </TeacherDashboardDataProvider>
             </ProgressProvider>
           </QuizDataProvider>
         </CourseContentProvider>

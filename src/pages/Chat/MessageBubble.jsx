@@ -1,3 +1,4 @@
+// MessageBubble.jsx
 export default function MessageBubble({ message, isOwn, currentUser, user }) {
     return (
         <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
