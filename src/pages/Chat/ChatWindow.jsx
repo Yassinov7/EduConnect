@@ -23,9 +23,36 @@ export default function ChatWindow({ chatId, otherUser, currentUser }) {
     }, [chatId, fetchMessages]);
 
     // Realtime subscription
+    // useEffect(() => {
+    //     if (!chatId) return;
+
+    //     setRealtimeStatus("connecting");
+    //     const channel = supabase
+    //         .channel(`messages-chat-${chatId}`)
+    //         .on(
+    //             "postgres_changes",
+    //             { event: "INSERT", schema: "public", table: "messages", filter: `chat_id=eq.${chatId}` },
+    //             (payload) => {
+    //                 setMessages((msgs) => {
+    //                     if (msgs.some((m) => m.id === payload.new.id)) return msgs;
+    //                     return [...msgs, payload.new];
+    //                 });
+    //                 console.log("🔔 [Realtime] New message received!", payload.new);
+    //             }
+    //         )
+    //         .subscribe((status) => {
+    //             console.log("⚡️ [Realtime] Channel status:", status);
+    //             setRealtimeStatus(status);
+    //         });
+
+    //     return () => {
+    //         console.log("🛑 [Realtime] Unsubscribing from", `messages-chat-${chatId}`);
+    //         supabase.removeChannel(channel);
+    //         setRealtimeStatus("disconnected");
+    //     };
+    // }, [chatId, setMessages]);
     useEffect(() => {
         if (!chatId) return;
-
         setRealtimeStatus("connecting");
         const channel = supabase
             .channel(`messages-chat-${chatId}`)
@@ -40,10 +67,10 @@ export default function ChatWindow({ chatId, otherUser, currentUser }) {
                     console.log("🔔 [Realtime] New message received!", payload.new);
                 }
             )
-            .subscribe((status) => {
-                console.log("⚡️ [Realtime] Channel status:", status);
-                setRealtimeStatus(status);
-            });
+            .subscribe();
+
+        // لا تمرر callback هنا!
+        // channel.on('system', ... ) إذا تريد تتبع الحالة
 
         return () => {
             console.log("🛑 [Realtime] Unsubscribing from", `messages-chat-${chatId}`);
