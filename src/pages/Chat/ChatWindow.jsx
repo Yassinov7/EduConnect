@@ -1,16 +1,16 @@
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "../../services/supabaseClient";
 import { useChat } from "../../contexts/ChatContext";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
-import { useEffect, useRef, useState } from "react";
-import { supabase } from "../../services/supabaseClient";
 
 export default function ChatWindow({ chatId, otherUser, currentUser }) {
     const { messages, loading, fetchMessages, setMessages } = useChat();
     const bottomRef = useRef(null);
     const [realtimeStatus, setRealtimeStatus] = useState("connecting"); // "connected", "error", "disconnected"
 
-    // Scroll to last message
+    // Scroll to last message on messages update
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
@@ -22,38 +22,12 @@ export default function ChatWindow({ chatId, otherUser, currentUser }) {
         }
     }, [chatId, fetchMessages]);
 
-    // Realtime subscription
-    // useEffect(() => {
-    //     if (!chatId) return;
-
-    //     setRealtimeStatus("connecting");
-    //     const channel = supabase
-    //         .channel(`messages-chat-${chatId}`)
-    //         .on(
-    //             "postgres_changes",
-    //             { event: "INSERT", schema: "public", table: "messages", filter: `chat_id=eq.${chatId}` },
-    //             (payload) => {
-    //                 setMessages((msgs) => {
-    //                     if (msgs.some((m) => m.id === payload.new.id)) return msgs;
-    //                     return [...msgs, payload.new];
-    //                 });
-    //                 console.log("🔔 [Realtime] New message received!", payload.new);
-    //             }
-    //         )
-    //         .subscribe((status) => {
-    //             console.log("⚡️ [Realtime] Channel status:", status);
-    //             setRealtimeStatus(status);
-    //         });
-
-    //     return () => {
-    //         console.log("🛑 [Realtime] Unsubscribing from", `messages-chat-${chatId}`);
-    //         supabase.removeChannel(channel);
-    //         setRealtimeStatus("disconnected");
-    //     };
-    // }, [chatId, setMessages]);
+    // Realtime subscription for current chatId
     useEffect(() => {
         if (!chatId) return;
         setRealtimeStatus("connecting");
+        console.log("🚀 Subscribing to realtime for chat", chatId);
+
         const channel = supabase
             .channel(`messages-chat-${chatId}`)
             .on(
@@ -67,19 +41,28 @@ export default function ChatWindow({ chatId, otherUser, currentUser }) {
                     console.log("🔔 [Realtime] New message received!", payload.new);
                 }
             )
+            .on('system', { event: 'SUBSCRIBED' }, (status) => {
+                setRealtimeStatus('connected');
+                console.log("✅ [Realtime] Status: SUBSCRIBED", status);
+            })
+            .on('system', { event: 'CHANNEL_ERROR' }, (status) => {
+                setRealtimeStatus('error');
+                console.log("❌ [Realtime] Status: CHANNEL_ERROR", status);
+            })
+            .on('system', { event: 'CLOSED' }, (status) => {
+                setRealtimeStatus('disconnected');
+                console.log("🚪 [Realtime] Status: CLOSED", status);
+            })
             .subscribe();
 
-        // لا تمرر callback هنا!
-        // channel.on('system', ... ) إذا تريد تتبع الحالة
-
         return () => {
-            console.log("🛑 [Realtime] Unsubscribing from", `messages-chat-${chatId}`);
             supabase.removeChannel(channel);
             setRealtimeStatus("disconnected");
+            console.log("🛑 [Realtime] Unsubscribing from", `messages-chat-${chatId}`);
         };
     }, [chatId, setMessages]);
 
-    // For UI: show status
+    // حالة اللون حسب حالة الريلتايم
     const statusColor = {
         connected: "text-green-500",
         disconnected: "text-gray-400",
