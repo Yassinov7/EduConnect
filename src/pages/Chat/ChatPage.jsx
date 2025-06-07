@@ -23,12 +23,12 @@ export default function ChatPage() {
   if (!user) return <LoadingSpinner text="جاري تحميل المستخدم..." />;
 
   return (
-    <div className="noto min-h-screen bg-slate-100 pt-16 pb-4 flex flex-col items-center">
+    <div className="noto min-h-screen bg-slate-100 pt-4 pb-4 flex flex-col items-center">
       <div className="w-full max-w-6xl flex flex-col md:flex-row gap-3 md:gap-4 min-h-[400px] relative">
 
         {/* زر القائمة الجانبية على الجوال */}
         <button
-          className="md:hidden fixed top-20 left-3 z-30 bg-orange-500 text-white rounded-full p-2 shadow-lg"
+          className="md:hidden fixed top-20 right-3 z-30 w-10 h-10 mt-3 bg-orange-500 text-white rounded-full p-2 shadow-lg"
           onClick={() => setShowSidebar(v => !v)}
         >
           ☰
