@@ -203,27 +203,27 @@ export function ChatProvider({ userId, children }) {
     };
 
     // Realtime
-    useEffect(() => {
-        if (!activeChatId) return;
-        const channel = supabase
-            .channel(`messages-chat-${activeChatId}`)
-            .on(
-                "postgres_changes",
-                { event: "INSERT", schema: "public", table: "messages", filter: `chat_id=eq.${activeChatId}` },
-                (payload) => {
-                    // استخدم الدالة التي تأخذ الحالة الأحدث دومًا
-                    setMessages((msgs) => {
-                        // تحقق من عدم تكرار الرسالة (لو فيها مشكلة مزمنة)
-                        if (msgs.some((m) => m.id === payload.new.id)) return msgs;
-                        return [...msgs, payload.new];
-                    });
-                }
-            )
-            .subscribe();
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [activeChatId]);
+    // useEffect(() => {
+    //     if (!activeChatId) return;
+    //     const channel = supabase
+    //         .channel(`messages-chat-${activeChatId}`)
+    //         .on(
+    //             "postgres_changes",
+    //             { event: "INSERT", schema: "public", table: "messages", filter: `chat_id=eq.${activeChatId}` },
+    //             (payload) => {
+    //                 // استخدم الدالة التي تأخذ الحالة الأحدث دومًا
+    //                 setMessages((msgs) => {
+    //                     // تحقق من عدم تكرار الرسالة (لو فيها مشكلة مزمنة)
+    //                     if (msgs.some((m) => m.id === payload.new.id)) return msgs;
+    //                     return [...msgs, payload.new];
+    //                 });
+    //             }
+    //         )
+    //         .subscribe();
+    //     return () => {
+    //         supabase.removeChannel(channel);
+    //     };
+    // }, [activeChatId]);
 
     // عند تغيير المستخدم: جلب كل شيء
     useEffect(() => {
