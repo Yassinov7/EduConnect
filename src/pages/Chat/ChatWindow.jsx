@@ -1,10 +1,11 @@
 import { useChat } from "../../contexts/ChatContext";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useEffect } from "react";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
 import { ChevronRight } from "lucide-react";
 
+// دالة تعرض اليوم/أمس/تاريخ
 function getDateLabel(date) {
     const msgDate = new Date(date);
     const now = new Date();
@@ -21,132 +22,92 @@ export default function ChatWindow({
     chatId,
     otherUser,
     currentUser,
-    onBack,
+    onBack, // زر رجوع للجوال
 }) {
     const { messages, loading, error } = useChat();
     const bottomRef = useRef(null);
 
-    // Debug: Log messages and chatId to verify data
-    useEffect(() => {
-        console.log("ChatWindow: chatId:", chatId, "Messages:", messages);
-    }, [chatId, messages]);
-
-    // Scroll to bottom when messages or chatId change
+    // Scroll للأسفل عند وصول رسالة جديدة
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, chatId]);
 
-    // Memoize chatWithDates to prevent unnecessary re-computation
-    const chatWithDates = useMemo(() => {
-        const result = [];
-        let lastDate = null;
-        messages
-            .filter((msg) => msg.chat_id === chatId)
-            .forEach((msg) => {
-                const dateLabel = getDateLabel(msg.created_at);
-                if (dateLabel !== lastDate) {
-                    result.push({ type: "date", label: dateLabel, id: `date-${msg.id}` });
-                    lastDate = dateLabel;
-                }
-                result.push({ ...msg, type: "msg" });
-            });
-        return result;
-    }, [messages, chatId]);
+    // جمع الرسائل مع فاصل التواريخ
+    let lastDate = null;
+    const chatWithDates = [];
+    messages
+        .filter((msg) => msg.chat_id === chatId)
+        .forEach((msg, i) => {
+            const dateLabel = getDateLabel(msg.created_at);
+            if (dateLabel !== lastDate) {
+                chatWithDates.push({ type: "date", label: dateLabel, id: `date-${msg.id}` });
+                lastDate = dateLabel;
+            }
+            chatWithDates.push({ ...msg, type: "msg" });
+        });
 
     return (
-        <div className="flex flex-col h-full w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="flex flex-col h-full w-full bg-white rounded-2xl md:rounded-2xl shadow-xl relative overflow-hidden">
             {/* Header */}
-            <div className="flex items-center gap-3 border-b px-4 py-3 bg-white sticky top-0 z-10 shadow-sm">
+            <div className="flex items-center gap-3 border-b px-4 py-3 bg-white sticky top-0 z-10 shadow-sm min-h-[60px]">
                 {onBack && (
                     <button
-                        className="md:hidden mr-2 text-orange-500 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                        className="md:hidden mr-2 text-orange-500 p-2"
                         onClick={onBack}
-                        aria-label="العودة إلى القائمة"
+                        aria-label="عودة"
                     >
                         <ChevronRight size={28} />
                     </button>
                 )}
                 <img
                     src={otherUser?.avatar_url || "/default-avatar.png"}
-                    alt={`صورة ${otherUser?.full_name || "مستخدم"}`}
-                    className="w-10 h-10 rounded-full border-2 border-orange-200 object-cover"
+                    alt=""
+                    className="w-11 h-11 rounded-full border-2 border-orange-200 object-cover"
                 />
                 <div className="min-w-0 flex-1">
-                    <div className="font-bold text-lg text-orange-600 truncate">
-                        {otherUser?.full_name || otherUser?.user_id || "مستخدم"}
-                    </div>
-                    {otherUser?.status && (
-                        <div className="text-xs text-gray-500">
-                            {otherUser.status === "online" ? "متصل" : "غير متصل"}
-                        </div>
-                    )}
+                    <div className="font-bold text-base md:text-lg text-orange-600 truncate">{otherUser?.full_name || otherUser?.user_id || "مستخدم"}</div>
                 </div>
             </div>
 
-            {/* Messages */}
-            <div
-                className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50"
-                style={{ minHeight: 0 }}
-                role="log"
-                aria-live="polite"
-            >
+            {/* الرسائل */}
+            <div className="flex-1 overflow-y-auto px-3 py-3 bg-orange-50" style={{ minHeight: 0 }}>
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
                         <LoadingSpinner size="sm" />
                     </div>
                 ) : error ? (
-                    <div className="text-red-600 text-center p-4">{error}</div>
+                    <div className="text-red-600 text-center">{error}</div>
                 ) : !chatWithDates.length ? (
                     <div className="text-gray-400 text-center mt-8">لا توجد رسائل بعد.</div>
                 ) : (
-                    <div key={`${chatId}-${messages.length}`}>
-                        {chatWithDates.map((item) =>
-                            item.type === "date" ? (
-                                <div key={item.id} className="flex justify-center my-3">
-                                    <span className="bg-orange-100 text-orange-600 px-4 py-1 rounded-full text-xs shadow-sm">
-                                        {item.label}
-                                    </span>
-                                </div>
-                            ) : (
-                                <div
-                                    key={item.id}
-                                    className="animate-slide-in"
-                                >
-                                    <MessageBubble
-                                        message={item}
-                                        isOwn={item.sender_id === (currentUser?.user_id || currentUser?.id)}
-                                        user={otherUser}
-                                        currentUser={currentUser}
-                                    />
-                                </div>
-                            )
-                        )}
-                    </div>
+                    chatWithDates.map((item) =>
+                        item.type === "date" ? (
+                            <div
+                                key={item.id}
+                                className="flex justify-center my-2"
+                            >
+                                <span className="bg-orange-200 text-orange-700 px-4 py-1 rounded-2xl text-xs shadow-sm">
+                                    {item.label}
+                                </span>
+                            </div>
+                        ) : (
+                            <MessageBubble
+                                key={item.id}
+                                message={item}
+                                isOwn={item.sender_id === (currentUser?.user_id || currentUser?.id)}
+                                user={otherUser}
+                                currentUser={currentUser}
+                            />
+                        )
+                    )
                 )}
                 <div ref={bottomRef} />
             </div>
 
-            {/* Input */}
-            <div className="flex-shrink-0 border-t px-4 py-3 bg-white sticky bottom-0 z-10">
+            {/* الإدخال */}
+            <div className="flex-shrink-0 border-t px-3 py-2 bg-white sticky bottom-0 z-10">
                 <ChatInput chatId={chatId} />
             </div>
-
-            {/* Custom animation for new messages */}
-            <style jsx>{`
-        .animate-slide-in {
-          animation: slideIn 0.3s ease-in-out;
-        }
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
         </div>
     );
 }

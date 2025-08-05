@@ -15,7 +15,6 @@ export default function BottomNav() {
     ...(profile?.role === "student"
       ? [{ to: "/my-results", label: "نتائجي", icon: CheckSquareIcon }]
       : []),
-    { to: "/profile", label: "حسابي", icon: UserCircle },
   ];
 
   return (

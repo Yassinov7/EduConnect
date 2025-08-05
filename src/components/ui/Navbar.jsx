@@ -5,7 +5,7 @@ import { UserCircle } from "lucide-react";
 
 
 export default function Navbar() {
-  const { profile, loading } = useAuth();
+  const { profile } = useAuth();
   const location = useLocation();
 
   const links = [
@@ -16,7 +16,6 @@ export default function Navbar() {
     ...(profile?.role === "student"
       ? [{ to: "/my-results", label: "نتائجي" }]
       : []),
-    { to: "/profile", label: "الملف الشخصي" },
   ];
 
   return (
