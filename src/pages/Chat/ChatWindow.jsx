@@ -1,7 +1,7 @@
 import { useChat } from "../../contexts/ChatContext";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
 import { ChevronRight } from "lucide-react";
 
@@ -26,22 +26,32 @@ export default function ChatWindow({
     const { messages, loading, error } = useChat();
     const bottomRef = useRef(null);
 
+    // Debug: Log messages and chatId to verify data
+    useEffect(() => {
+        console.log("ChatWindow: chatId:", chatId, "Messages:", messages);
+    }, [chatId, messages]);
+
+    // Scroll to bottom when messages or chatId change
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, chatId]);
 
-    let lastDate = null;
-    const chatWithDates = [];
-    messages
-        .filter((msg) => msg.chat_id === chatId)
-        .forEach((msg) => {
-            const dateLabel = getDateLabel(msg.created_at);
-            if (dateLabel !== lastDate) {
-                chatWithDates.push({ type: "date", label: dateLabel, id: `date-${msg.id}` });
-                lastDate = dateLabel;
-            }
-            chatWithDates.push({ ...msg, type: "msg" });
-        });
+    // Memoize chatWithDates to prevent unnecessary re-computation
+    const chatWithDates = useMemo(() => {
+        const result = [];
+        let lastDate = null;
+        messages
+            .filter((msg) => msg.chat_id === chatId)
+            .forEach((msg) => {
+                const dateLabel = getDateLabel(msg.created_at);
+                if (dateLabel !== lastDate) {
+                    result.push({ type: "date", label: dateLabel, id: `date-${msg.id}` });
+                    lastDate = dateLabel;
+                }
+                result.push({ ...msg, type: "msg" });
+            });
+        return result;
+    }, [messages, chatId]);
 
     return (
         <div className="flex flex-col h-full w-full bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -65,11 +75,21 @@ export default function ChatWindow({
                     <div className="font-bold text-lg text-orange-600 truncate">
                         {otherUser?.full_name || otherUser?.user_id || "مستخدم"}
                     </div>
+                    {otherUser?.status && (
+                        <div className="text-xs text-gray-500">
+                            {otherUser.status === "online" ? "متصل" : "غير متصل"}
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 bg-gray-50" style={{ minHeight: 0 }}>
+            <div
+                className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50"
+                style={{ minHeight: 0 }}
+                role="log"
+                aria-live="polite"
+            >
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
                         <LoadingSpinner size="sm" />
@@ -79,23 +99,29 @@ export default function ChatWindow({
                 ) : !chatWithDates.length ? (
                     <div className="text-gray-400 text-center mt-8">لا توجد رسائل بعد.</div>
                 ) : (
-                    chatWithDates.map((item) =>
-                        item.type === "date" ? (
-                            <div key={item.id} className="flex justify-center my-3">
-                                <span className="bg-orange-100 text-orange-600 px-4 py-1 rounded-full text-xs shadow-sm">
-                                    {item.label}
-                                </span>
-                            </div>
-                        ) : (
-                            <MessageBubble
-                                key={item.id}
-                                message={item}
-                                isOwn={item.sender_id === (currentUser?.user_id || currentUser?.id)}
-                                user={otherUser}
-                                currentUser={currentUser}
-                            />
-                        )
-                    )
+                    <div key={`${chatId}-${messages.length}`}>
+                        {chatWithDates.map((item) =>
+                            item.type === "date" ? (
+                                <div key={item.id} className="flex justify-center my-3">
+                                    <span className="bg-orange-100 text-orange-600 px-4 py-1 rounded-full text-xs shadow-sm">
+                                        {item.label}
+                                    </span>
+                                </div>
+                            ) : (
+                                <div
+                                    key={item.id}
+                                    className="animate-slide-in"
+                                >
+                                    <MessageBubble
+                                        message={item}
+                                        isOwn={item.sender_id === (currentUser?.user_id || currentUser?.id)}
+                                        user={otherUser}
+                                        currentUser={currentUser}
+                                    />
+                                </div>
+                            )
+                        )}
+                    </div>
                 )}
                 <div ref={bottomRef} />
             </div>
@@ -104,6 +130,23 @@ export default function ChatWindow({
             <div className="flex-shrink-0 border-t px-4 py-3 bg-white sticky bottom-0 z-10">
                 <ChatInput chatId={chatId} />
             </div>
+
+            {/* Custom animation for new messages */}
+            <style jsx>{`
+        .animate-slide-in {
+          animation: slideIn 0.3s ease-in-out;
+        }
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
         </div>
     );
 }
