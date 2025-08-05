@@ -5,7 +5,6 @@ import { useRef, useEffect } from "react";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
 import { ChevronRight } from "lucide-react";
 
-// دالة تعرض اليوم/أمس/تاريخ
 function getDateLabel(date) {
     const msgDate = new Date(date);
     const now = new Date();
@@ -22,22 +21,20 @@ export default function ChatWindow({
     chatId,
     otherUser,
     currentUser,
-    onBack, // زر رجوع للجوال
+    onBack,
 }) {
     const { messages, loading, error } = useChat();
     const bottomRef = useRef(null);
 
-    // Scroll للأسفل عند وصول رسالة جديدة
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, chatId]);
 
-    // جمع الرسائل مع فاصل التواريخ
     let lastDate = null;
     const chatWithDates = [];
     messages
         .filter((msg) => msg.chat_id === chatId)
-        .forEach((msg, i) => {
+        .forEach((msg) => {
             const dateLabel = getDateLabel(msg.created_at);
             if (dateLabel !== lastDate) {
                 chatWithDates.push({ type: "date", label: dateLabel, id: `date-${msg.id}` });
@@ -47,46 +44,45 @@ export default function ChatWindow({
         });
 
     return (
-        <div className="flex flex-col h-full w-full bg-white rounded-2xl md:rounded-2xl shadow-xl relative overflow-hidden">
+        <div className="flex flex-col h-full w-full bg-white rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-center gap-3 border-b px-4 py-3 bg-white sticky top-0 z-10 shadow-sm min-h-[60px]">
+            <div className="flex items-center gap-3 border-b px-4 py-3 bg-white sticky top-0 z-10 shadow-sm">
                 {onBack && (
                     <button
-                        className="md:hidden mr-2 text-orange-500 p-2"
+                        className="md:hidden mr-2 text-orange-500 p-2 hover:bg-gray-100 rounded-full transition-colors"
                         onClick={onBack}
-                        aria-label="عودة"
+                        aria-label="العودة إلى القائمة"
                     >
                         <ChevronRight size={28} />
                     </button>
                 )}
                 <img
                     src={otherUser?.avatar_url || "/default-avatar.png"}
-                    alt=""
-                    className="w-11 h-11 rounded-full border-2 border-orange-200 object-cover"
+                    alt={`صورة ${otherUser?.full_name || "مستخدم"}`}
+                    className="w-10 h-10 rounded-full border-2 border-orange-200 object-cover"
                 />
                 <div className="min-w-0 flex-1">
-                    <div className="font-bold text-base md:text-lg text-orange-600 truncate">{otherUser?.full_name || otherUser?.user_id || "مستخدم"}</div>
+                    <div className="font-bold text-lg text-orange-600 truncate">
+                        {otherUser?.full_name || otherUser?.user_id || "مستخدم"}
+                    </div>
                 </div>
             </div>
 
-            {/* الرسائل */}
-            <div className="flex-1 overflow-y-auto px-3 py-3 bg-orange-50" style={{ minHeight: 0 }}>
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 bg-gray-50" style={{ minHeight: 0 }}>
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
                         <LoadingSpinner size="sm" />
                     </div>
                 ) : error ? (
-                    <div className="text-red-600 text-center">{error}</div>
+                    <div className="text-red-600 text-center p-4">{error}</div>
                 ) : !chatWithDates.length ? (
                     <div className="text-gray-400 text-center mt-8">لا توجد رسائل بعد.</div>
                 ) : (
                     chatWithDates.map((item) =>
                         item.type === "date" ? (
-                            <div
-                                key={item.id}
-                                className="flex justify-center my-2"
-                            >
-                                <span className="bg-orange-200 text-orange-700 px-4 py-1 rounded-2xl text-xs shadow-sm">
+                            <div key={item.id} className="flex justify-center my-3">
+                                <span className="bg-orange-100 text-orange-600 px-4 py-1 rounded-full text-xs shadow-sm">
                                     {item.label}
                                 </span>
                             </div>
@@ -104,8 +100,8 @@ export default function ChatWindow({
                 <div ref={bottomRef} />
             </div>
 
-            {/* الإدخال */}
-            <div className="flex-shrink-0 border-t px-3 py-2 bg-white sticky bottom-0 z-10">
+            {/* Input */}
+            <div className="flex-shrink-0 border-t px-4 py-3 bg-white sticky bottom-0 z-10">
                 <ChatInput chatId={chatId} />
             </div>
         </div>

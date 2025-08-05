@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LoadingSpinner } from "../../../../components/ui/LoadingSpinner";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../../../../components/ui/Button";
 import { useAuth } from "../../../../contexts/AuthProvider";
@@ -110,7 +111,7 @@ export default function QuizSolvePage() {
   // تحميل أو لا يوجد بيانات
   const questions = questionsMap[quizId] || [];
   if (loading || !quiz) {
-    return <div className="py-10 text-center text-xl">جاري التحميل...</div>;
+    return <LoadingSpinner text="تحميل بيانات الأختبار ..." />;
   }
 
   if (!questions.length) {
@@ -132,11 +133,9 @@ export default function QuizSolvePage() {
         <div className="text-xl font-bold text-slate-900 mb-2">
           النسبة: {result.percent}%
         </div>
-        <div className={`text-lg font-bold px-4 py-2 rounded-xl ${result.percent >= 60 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-          {result.percent >= 60 ? "ناجح" : "راسب"}
-        </div>
-        <div className={`text-lg font-bold px-4 py-2 rounded-xl ${result.percent >= 60 ? "text-green-800" : " text-red-800"}`}>
-          {result.percent >= 60 ? <CircleCheckBigIcon size={30} /> : <BadgeX size={30} />}
+        <div className={`flex items-center gap-2 text-lg font-bold px-4 py-2 rounded-xl ${result.percent >= 60 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+          <span>{result.percent >= 60 ? "ناجح" : "راسب"}</span>
+          {result.percent >= 60 ? <CircleCheckBigIcon size={24} /> : <BadgeX size={24} />}
         </div>
         <div className="w-full mt-8">
           <h3 className="font-bold mb-3 text-slate-800 text-center">تفاصيل الإجابات:</h3>
@@ -150,22 +149,26 @@ export default function QuizSolvePage() {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="font-bold text-base text-slate-800">{idx + 1}. {q.question_text}</span>
                   {isCorrect
-                    ? <CheckCircle size={20} className="text-green-500" />
+                    ? <CheckCircle size={20} className="text-green-500 " />
                     : <XCircle size={20} className="text-red-500" />
                   }
                 </div>
-                <div className="grid gap-1 pl-7">
-                  {["a", "b", "c", "d"].map(opt => (
-                    <div key={opt} className={`
-                                            flex items-center gap-2 rounded px-2 py-1
-                                            ${correct === opt && !isCorrect ? "bg-green-100 text-green-700 font-bold" : ""}
-                                            ${selected === opt && selected !== correct ? "bg-red-100 text-red-700" : ""}
-                                            ${selected === opt && selected === correct ? "bg-green-100 text-green-700 font-bold" : ""}
-                                        `}>
-                      <span className="font-bold">{opt.toUpperCase()}.</span>
-                      <span>{q[`option_${opt}`]}</span>
-                      {selected === opt && <span className="text-xs ml-2">(إجابتك)</span>}
-                      {correct === opt && <span className="text-xs ml-2">(الصحيحة)</span>}
+                <div className="grid gap-2 pl-6 pr-4">
+                  {["a", "b", "c", "d"].map((opt) => (
+                    <div
+                      key={opt}
+                      className={`
+        flex items-center gap-3 rounded-lg px-3 py-2 transition-colors duration-200
+        ${correct === opt && !isCorrect ? "bg-green-700 text-green-100 font-semibold" : ""}
+        ${selected === opt && selected !== correct ? "bg-red-100 text-red-800" : ""}
+        ${selected === opt && selected === correct ? "bg-green-100 text-green-800 font-semibold" : ""}
+        ${!(correct === opt || selected === opt) ? "hover:bg-gray-50" : ""}
+      `}
+                    >
+                      <span className="font-bold w-6">{opt.toUpperCase()}.</span>
+                      <span className="flex-1">{q[`option_${opt}`]}</span>
+                      {selected === opt && <span className="text-xs text-gray-600 ml-2">(إجابتك)</span>}
+                      {correct === opt && <span className="text-xs text-gray-600 ml-2">(الصحيحة)</span>}
                     </div>
                   ))}
                 </div>

@@ -62,7 +62,7 @@ export default function QuizAnswersPage() {
     return (
         <div className="max-w-2xl mx-auto py-10 px-2">
             {/* بيانات الطالب + اسم الاختبار */}
-            <Card className="mb-6 flex items-center gap-4">
+            <Card className="mb-6 flex  items-center gap-4">
                 <img
                     src={profile?.avatar_url || "https://placehold.co/40x40"}
                     alt="avatar"
@@ -74,9 +74,8 @@ export default function QuizAnswersPage() {
                         اختبار: <span className="text-orange-600">{quiz?.title || "..."}</span>
                     </div>
                 </div>
-                <div className="ml-auto">
+                <div className="mr-auto">
                     <Button
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-900 border shadow-none"
                         onClick={() => navigate(-1)}
                     >
                         رجوع
@@ -91,7 +90,7 @@ export default function QuizAnswersPage() {
             {!questions.length ? (
                 <div className="text-gray-500 text-center">لا يوجد أسئلة لهذا الاختبار.</div>
             ) : (
-                <ol className="space-y-5">
+                <ol className="space-y-5 ">
                     {questions.map((q, idx) => {
                         const answer = answers.find(a => a.question_id === q.id);
 
@@ -119,7 +118,7 @@ export default function QuizAnswersPage() {
                                 <div className="mb-2 font-bold text-orange-700">
                                     سؤال {idx + 1}: <span className="text-slate-900">{q.question_text}</span>
                                 </div>
-                                <ul className="mb-2 pl-4 list-[upper-alpha] text-slate-700">
+                                <ul className="mb-2 pl-4 list-[upper-alpha] mx-8 text-slate-700">
                                     {options.map((opt, oidx) => (
                                         <li key={oidx}>{opt}</li>
                                     ))}
