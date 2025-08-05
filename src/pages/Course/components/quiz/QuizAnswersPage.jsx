@@ -12,7 +12,7 @@ export default function QuizAnswersPage() {
     const navigate = useNavigate();
     const studentId = new URLSearchParams(location.search).get("student");
 
-    const { fetchQuizQuestions, fetchQuizAnswers, questionsMap, answersMap, loading } = useQuizData();
+    const { fetchQuizQuestions, fetchStudentQuizAnswers, questionsMap, answersMap, loading } = useQuizData();
 
     const [profile, setProfile] = useState(null);
     const [quiz, setQuiz] = useState(null);
@@ -20,7 +20,7 @@ export default function QuizAnswersPage() {
     useEffect(() => {
         if (!quizId || !studentId) return;
         fetchQuizQuestions(quizId);
-        fetchQuizAnswers(quizId, studentId);
+        fetchStudentQuizAnswers(quizId, studentId);
         fetchQuizMetaData();
         // eslint-disable-next-line
     }, [quizId, studentId]);
