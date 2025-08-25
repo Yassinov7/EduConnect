@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import RegisterPage from "./pages/Auth/RegisterPage";
 import LoginPage from "./pages/Auth/LoginPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -29,7 +29,7 @@ export default function App() {
   return (
     <AuthProvider>
       <AppProviders>
-        <BrowserRouter>
+        {/* <BrowserRouter> */}
           <Routes>
             {/* صفحات عامة خارج النظام المحمي */}
             <Route path="/login" element={<LoginPage />} />
@@ -61,7 +61,7 @@ export default function App() {
             {/* صفحة 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+        {/* </BrowserRouter> */}
       </AppProviders>
     </AuthProvider>
   );

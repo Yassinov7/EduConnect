@@ -17,32 +17,35 @@ export default function LoginPage() {
         setError("");
         setLoading(true);
 
-        // 1. تسجيل الدخول في Supabase Auth
-        const { data, error: loginError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (loginError) {
-            setError("بيانات الدخول غير صحيحة أو لم يتم تفعيل البريد.");
-            setLoading(false);
-            return;
-        }
-
-        const user = data.user;
-        if (!user) {
-            setError("حدث خطأ غير متوقع. يرجى المحاولة لاحقًا.");
-            setLoading(false);
-            return;
-        }
-
-        // 2. تحقق من وجود ملف profile، وإن لم يوجد أنشئه
         try {
-            const { data: profile } = await supabase
+            // 1. تسجيل الدخول في Supabase Auth
+            const { data, error: loginError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (loginError) {
+                setError("بيانات الدخول غير صحيحة أو لم يتم تفعيل البريد.");
+                return;
+            }
+
+            const user = data?.user;
+            if (!user) {
+                setError("حدث خطأ غير متوقع. يرجى المحاولة لاحقًا.");
+                return;
+            }
+
+            // 2. تحقق من وجود ملف profile، وإن لم يوجد أنشئه
+            const { data: profile, error: profileError } = await supabase
                 .from("profiles")
                 .select("*")
                 .eq("user_id", user.id)
                 .single();
+
+            if (profileError && profileError.code !== "PGRST116") {
+                // PGRST116 = no rows returned → means profile not found
+                throw profileError;
+            }
 
             if (!profile) {
                 await supabase.from("profiles").insert([
@@ -56,16 +59,19 @@ export default function LoginPage() {
                     },
                 ]);
             }
-        } catch (err) {
-            setError("حدث خطأ أثناء مزامنة البيانات. حاول مجددًا.");
-            setLoading(false);
-            return;
-        }
 
-        setLoading(false);
-        toast.success("تم تسجيل الدخول بنجاح!");
-        navigate("/dashboard");
+            // ✅ Success
+            toast.success("تم تسجيل الدخول بنجاح!");
+            navigate("/dashboard");
+
+        } catch (err) {
+            console.error("Login/Profile error:", err);
+            setError("حدث خطأ أثناء تسجيل الدخول أو مزامنة البيانات.");
+        } finally {
+            setLoading(false); // always reset loading
+        }
     }
+
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-orange-50 via-white to-orange-100">
